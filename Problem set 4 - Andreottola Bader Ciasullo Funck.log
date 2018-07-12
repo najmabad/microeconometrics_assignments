@@ -1,0 +1,1213 @@
+----------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 
+> 4\Problem set 4 - Andreottola Bader Ciasullo Funck.log
+  log type:  text
+ opened on:  10 May 2017, 21:47:26
+
+. 
+. use mexico_2014.dta
+
+. 
+. ***************************************************************************
+. ******************** Question 1 *******************************************
+. ***************************************************************************
+. /*Balance table of individual characteristics*/
+. local index = 0
+
+. foreach x of varlist social_income female region_* age occup_* tap_water size_household owns_house
+> {
+  2.         quietly ttest `x' if round==1, by (ever_treated)
+  3.         if `index' != 0 {
+  4.                 matrix metrics = metrics \ r(mu_1), r(sd_1), r(mu_2), r(sd_2), r(mu_1) - r(mu_2
+> ), r(se)
+  5.         }
+  6.         else{
+  7.                 matrix metrics = r(mu_1), r(sd_1), r(mu_2) , r(sd_2), r(mu_1) - r(mu_2), r(se) 
+  8.         }
+  9.         local index = `index' + 1
+ 10. }
+
+. 
+. matrix rownames metrics = "Social income" "Female" "Region (north)" ///
+> "Region (south)" "Age" "Self-employed" "Wage worker" ///
+> "Farmer" "Tap water (hh)" "Size household" "House property"
+
+. 
+. matrix metrics = metrics'
+
+. 
+. matrix stars=  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  2, 0, 3, 3, 2, 0, 3, 3, 3, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ///
+> 
+
+.  
+.  quietly frmttable using question1, statmat(metrics) ///
+> noblankrows /// 
+>         tex fragment replace rtitles( ///
+>         "Control", "Mean" \ "", "Standard deviation"\ ///
+>         "Treated", "Mean" \ "", "Standard deviation"\ ///
+>         "Difference", "Mean" \ "", "Standard error"\" ") ///
+>         annotate(stars) asymbol(*,**,***) 
+
+.         
+. /*Balance table of locality characteristics*/
+. local index = 0
+
+. foreach x of varlist loc_*{
+  2.         quietly ttest `x' if round==1, by (ever_treated)
+  3.         if `index' != 0 {
+  4.                 matrix metrics = metrics \ r(mu_1), r(sd_1), r(mu_2), r(sd_2), r(mu_1) - r(mu_2
+> ), r(se)
+  5.         }
+  6.         else{
+  7.                 matrix metrics = r(mu_1), r(sd_1), r(mu_2) , r(sd_2), r(mu_1) - r(mu_2), r(se) 
+  8.         }
+  9.         local index = `index' + 1
+ 10. }
+
+. 
+. matrix rownames metrics =  "Population" "Illiterate" "No primary school" ///
+> "No toilet" "No electricty" "No tap water" "Persons per room (loc)" "Earth floor (loc)" ///
+> "Less than 2 min wage" "Marginality index" 
+
+. 
+. 
+. matrix metrics = metrics'
+
+. 
+. matrix stars=  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  1, 0, 0, 3, 0, 3, 2, 3, 1, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  ///
+> 
+
+. 
+. quietly frmttable using question1bis, statmat(metrics) ///
+> noblankrows /// 
+>         tex fragment replace rtitles( ///
+>         "Control", "Mean" \ "", "Standard deviation"\ ///
+>         "Treated", "Mean" \ "", "Standard deviation"\ ///
+>         "Difference", "Mean" \ "", "Standard error"\" ") ///
+>         annotate(stars) asymbol(*,**,***)
+
+.         
+. ***************************************************************************
+. ******************** Question 2 *******************************************
+. ***************************************************************************
+. 
+. keep if numrounds==4
+(858 observations deleted)
+
+. 
+. keep total_savings round id ever_treated
+
+. reshape wide total_savings, i(id) j(round)
+(note: j = 1 2 3 4)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                     3788   ->     947
+Number of variables                   4   ->       6
+j variable (4 values)             round   ->   (dropped)
+xij variables:
+                          total_savings   ->   total_savings1 total_savings2 ... total_savings4
+-----------------------------------------------------------------------------
+
+. 
+. 
+. forvalues i= 1(1)4 {
+  2. gen total_savingsw`i'=total_savings`i'
+  3. quietly sum total_savings`i', det
+  4. replace total_savingsw`i'=r(p95) if total_savings`i'>r(p95) & total_savings`i'<=r(max)
+  5. }
+(40 real changes made)
+(43 real changes made)
+(39 real changes made)
+(40 real changes made)
+
+. 
+. ***************************************************************************
+. ******************** Question 3 *******************************************
+. ***************************************************************************
+. 
+. 
+. 
+. ttest total_savingsw1, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652    118.0982    11.83601    302.2242    94.85679    141.3395
+       1 |     295    98.61017    15.76956    270.8511    67.57464    129.6457
+---------+--------------------------------------------------------------------
+combined |     947    112.0275    9.514999    292.8086    93.35451    130.7004
+---------+--------------------------------------------------------------------
+    diff |            19.48799    20.54693                -20.8349    59.81088
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =   0.9485
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.8284         Pr(|T| > |t|) = 0.3431          Pr(T > t) = 0.1716
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. matrix metrics = r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. 
+. 
+. 
+. egen total_savingswa = rowmean(total_savingsw2 total_savingsw3 total_savingsw4)
+
+. ttest total_savingswa, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652    297.1605    18.77436    479.3899    260.2949    334.0261
+       1 |     295    371.5887    29.57019    507.8847    313.3926    429.7848
+---------+--------------------------------------------------------------------
+combined |     947    320.3457    15.90309    489.3915    289.1362    351.5551
+---------+--------------------------------------------------------------------
+    diff |           -74.42817    34.27246               -141.6871   -7.169239
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -2.1717
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0151         Pr(|T| > |t|) = 0.0301          Pr(T > t) = 0.9849
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. 
+. matrix metrics = metrics \ r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. gen total_savingswd=total_savingswa-total_savingsw1
+
+. ttest total_savingswd, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652    179.0624    18.21804    465.1847    143.2892    214.8356
+       1 |     295    272.9785    31.53947    541.7083    210.9068    335.0503
+---------+--------------------------------------------------------------------
+combined |     947    208.3182      15.986     491.943    176.9461    239.6903
+---------+--------------------------------------------------------------------
+    diff |           -93.91616    34.40161               -161.4285   -26.40378
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -2.7300
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0032         Pr(|T| > |t|) = 0.0065          Pr(T > t) = 0.9968
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. 
+. matrix metrics = metrics \ r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. matrix rownames metrics = "Before" "After" "After - Before"
+
+. matrix metrics=metrics'
+
+. 
+. 
+. 
+. quietly frmttable using question3, statmat(metrics) ///
+> noblankrows title("Table 3" \ "Difference in differences estimate") /// 
+> tex fragment replace rtitles( ///
+> "Treatment Group", "mean" \ "", "se"\ ///
+> "Control Group", "mean" \ "", "se"\ ///
+> "Difference", "mean" \ "", "se"\" ","p-value") ///
+> 
+
+. 
+. *alternative replacement of outliers*
+. clear all
+
+. use mexico_2014.dta
+
+. keep if numrounds==4
+(858 observations deleted)
+
+. 
+. gen total_savingsw=total_savings
+
+. quietly sum total_savings, det
+
+. replace total_savingsw=r(p95) if total_savings>r(p95) & total_savings<=r(max)
+(186 real changes made)
+
+. 
+. keep total_savingsw round id ever_treated
+
+. reshape wide total_savingsw, i(id) j(round)
+(note: j = 1 2 3 4)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                     3788   ->     947
+Number of variables                   4   ->       6
+j variable (4 values)             round   ->   (dropped)
+xij variables:
+                         total_savingsw   ->   total_savingsw1 total_savingsw2 ... total_savingsw4
+-----------------------------------------------------------------------------
+
+. 
+. 
+. ttest total_savingsw1, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652    150.6902    16.69699    426.3458    117.9037    183.4766
+       1 |     295    125.2203    22.40919    384.8905    81.11758    169.3231
+---------+--------------------------------------------------------------------
+combined |     947    142.7561     13.4481    413.8432    116.3645    169.1476
+---------+--------------------------------------------------------------------
+    diff |            25.46985    29.04217               -31.52476    82.46445
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =   0.8770
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.8096         Pr(|T| > |t|) = 0.3807          Pr(T > t) = 0.1904
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. matrix metrics = r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. 
+. 
+. 
+. egen total_savingswa = rowmean(total_savingsw2 total_savingsw3 total_savingsw4)
+
+. ttest total_savingswa, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652    262.2832    15.76964    402.6666    231.3177    293.2487
+       1 |     295    326.6576    23.83088    409.3088    279.7569    373.5584
+---------+--------------------------------------------------------------------
+combined |     947    282.3365    13.18117    405.6289    256.4688    308.2042
+---------+--------------------------------------------------------------------
+    diff |           -64.37439     28.4002               -120.1091   -8.639647
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -2.2667
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0118         Pr(|T| > |t|) = 0.0236          Pr(T > t) = 0.9882
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. 
+. matrix metrics = metrics \ r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. gen total_savingswd=total_savingswa-total_savingsw1
+
+. ttest total_savingswd, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     652     111.593    18.15453     463.563    75.94455    147.2415
+       1 |     295    201.4373    30.64573    526.3576    141.1245    261.7501
+---------+--------------------------------------------------------------------
+combined |     947    139.5804     15.7768    485.5052    108.6189     170.542
+---------+--------------------------------------------------------------------
+    diff |           -89.84424     33.9595                -156.489   -23.19949
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -2.6456
+Ho: diff = 0                                     degrees of freedom =      945
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0041         Pr(|T| > |t|) = 0.0083          Pr(T > t) = 0.9959
+
+. scalar se_1=r(sd_1)/sqrt(r(N_1))
+
+. scalar se_2=r(sd_2)/sqrt(r(N_2))
+
+. 
+. matrix metrics = metrics \ r(mu_2),se_2, r(mu_1), se_1, r(mu_2) - r(mu_1), r(se), r(p)
+
+. 
+. matrix rownames metrics = "Before" "After" "After - Before"
+
+. matrix metrics=metrics'
+
+. 
+. 
+. 
+. quietly frmttable using question3alt, statmat(metrics) ///
+> noblankrows title("Table 4" \ "Difference in differences estimate - Alternative winsorizing") /// 
+> tex fragment replace rtitles( ///
+> "Treatment Group", "mean" \ "", "se"\ ///
+> "Control Group", "mean" \ "", "se"\ ///
+> "Difference", "mean" \ "", "se"\" ","p-value") ///
+> 
+
+. 
+. 
+. ***************************************************************************
+. ******************** Question 4 *******************************************
+. ***************************************************************************
+. clear all
+
+. use mexico_2014.dta
+
+. keep if numrounds==4
+(858 observations deleted)
+
+. 
+. gen total_savingsw=total_savings
+
+. quietly sum total_savings, det
+
+. replace total_savingsw=r(p95) if total_savings>r(p95) & total_savings<=r(max)
+(186 real changes made)
+
+. 
+. keep total_savingsw round id ever_treated
+
+. reshape wide total_savingsw, i(id) j(round)
+(note: j = 1 2 3 4)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                     3788   ->     947
+Number of variables                   4   ->       6
+j variable (4 values)             round   ->   (dropped)
+xij variables:
+                         total_savingsw   ->   total_savingsw1 total_savingsw2 ... total_savingsw4
+-----------------------------------------------------------------------------
+
+. 
+. egen total_savingswa = rowmean(total_savingsw2 total_savingsw3 total_savingsw4)
+
+. gen total_savingswd=total_savingswa-total_savingsw1
+
+.  
+. label variable total_savingswd "Total savings"
+
+. label variable ever_treated "Treatment dummy"
+
+. reg total_savingswd ever_treated
+
+      Source |       SS           df       MS      Number of obs   =       947
+-------------+----------------------------------   F(1, 945)       =      7.00
+       Model |   1639457.3         1   1639457.3   Prob > F        =    0.0083
+    Residual |   221347191       945  234229.832   R-squared       =    0.0074
+-------------+----------------------------------   Adj R-squared   =    0.0063
+       Total |   222986649       946  235715.273   Root MSE        =    483.97
+
+------------------------------------------------------------------------------
+total_savi~d |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |   89.84424    33.9595     2.65   0.008     23.19949     156.489
+       _cons |    111.593   18.95384     5.89   0.000     74.39656    148.7895
+------------------------------------------------------------------------------
+
+. outreg2 using question4, replace tex(fragment) label ///
+> title("Table 5 - Regression Estimate") ctitle(Regular SE)
+question4.tex
+dir : seeout
+
+.  
+. reg total_savingswd ever_treated, vce(robust)
+
+Linear regression                               Number of obs     =        947
+                                                F(1, 945)         =       6.37
+                                                Prob > F          =     0.0118
+                                                R-squared         =     0.0074
+                                                Root MSE          =     483.97
+
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~d |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |   89.84424   35.60528     2.52   0.012     19.96969    159.7188
+       _cons |    111.593   18.15979     6.15   0.000     75.95488    147.2312
+------------------------------------------------------------------------------
+
+. outreg2 using question4, tex(fragment) label ///
+> title("Table 5 - Regression Estimate")  ctitle(Robust SE)
+question4.tex
+dir : seeout
+
+. 
+. reg total_savingswd ever_treated, vce(cluster id)
+
+Linear regression                               Number of obs     =        947
+                                                F(1, 946)         =       6.37
+                                                Prob > F          =     0.0118
+                                                R-squared         =     0.0074
+                                                Root MSE          =     483.97
+
+                                   (Std. Err. adjusted for 947 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~d |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |   89.84424   35.60528     2.52   0.012     19.96978    159.7187
+       _cons |    111.593   18.15979     6.15   0.000     75.95493    147.2312
+------------------------------------------------------------------------------
+
+. outreg2 using question4, tex(fragment) label ///
+> title("Table 5 - Regression Estimate") ctitle(Clustered (by id) SE)
+question4.tex
+dir : seeout
+
+. 
+. ***************************************************************************
+. ******************** Question 5 *******************************************
+. ***************************************************************************
+. clear all
+
+. use mexico_2014.dta
+
+. keep if numrounds==4
+(858 observations deleted)
+
+. 
+. gen after=0
+
+. replace after=1 if round>1
+(2,841 real changes made)
+
+. 
+. gen did=after*ever_treated
+
+. label variable ever_treated "Treatment dummy"
+
+. label variable after "Time dummy"
+
+. label variable did "Time dummy * Treatment dummy"
+
+. 
+. gen total_savingsw=total_savings
+
+. quietly sum total_savings, det
+
+. replace total_savingsw=r(p95) if total_savings>r(p95) & total_savings<=r(max)
+(186 real changes made)
+
+. label variable total_savingsw "Total savings_w"
+
+. 
+. regress total_savingsw after ever_treated did 
+
+      Source |       SS           df       MS      Number of obs   =     3,788
+-------------+----------------------------------   F(3, 3784)      =     18.95
+       Model |  16494375.5         3  5498125.18   Prob > F        =    0.0000
+    Residual |  1.0978e+09     3,784  290127.549   R-squared       =    0.0148
+-------------+----------------------------------   Adj R-squared   =    0.0140
+       Total |  1.1143e+09     3,787  294253.241   Root MSE        =    538.63
+
+------------------------------------------------------------------------------
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       after |    111.593   24.35791     4.58   0.000     63.83714     159.349
+ever_treated |  -25.46985   37.79503    -0.67   0.500    -99.57044    48.63075
+         did |   89.84424   43.64194     2.06   0.040     4.280244    175.4082
+       _cons |   150.6902   21.09457     7.14   0.000     109.3324     192.048
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, replace tex(fragment) label ///
+> title("Table 6 - Pooled OLS") ctitle(Regular SE)
+questions56.tex
+dir : seeout
+
+. 
+. 
+. ***************************************************************************
+. ******************** Question 6 *******************************************
+. ***************************************************************************
+. regress total_savingsw after ever_treated did, vce(robust)
+
+Linear regression                               Number of obs     =      3,788
+                                                F(3, 3784)        =      25.00
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0148
+                                                Root MSE          =     538.63
+
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       after |    111.593   21.10058     5.29   0.000     70.22344    152.9627
+ever_treated |  -25.46985    27.9223    -0.91   0.362    -80.21405    29.27436
+         did |   89.84424   36.45257     2.46   0.014     18.37566    161.3128
+       _cons |   150.6902     16.693     9.03   0.000      117.962    183.4183
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, tex(fragment) label ///
+> title("Table 6 - Pooled OLS") ctitle(Robust SE)
+questions56.tex
+dir : seeout
+
+. 
+. sum did
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+         did |      3,788    .2336325    .4231969          0          1
+
+. 
+. regress total_savingsw ever_treated after did, vce(hc2)
+
+Linear regression                               Number of obs     =      3,788
+                                                F(3, 3784)        =      24.98
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0148
+                                                Root MSE          =     538.63
+
+------------------------------------------------------------------------------
+             |             Robust HC2
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |  -25.46985   27.94568    -0.91   0.362     -80.2599    29.32021
+       after |    111.593   21.10159     5.29   0.000     70.22146    152.9646
+         did |   89.84424   36.46963     2.46   0.014     18.34221    161.3463
+       _cons |   150.6902   16.69699     9.02   0.000     117.9542    183.4262
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, tex(fragment) label ///
+> title("Table 6 - Pooled OLS") ctitle(HC2 SE)
+questions56.tex
+dir : seeout
+
+. 
+. regress total_savingsw ever_treated after did, vce(hc3)
+
+Linear regression                               Number of obs     =      3,788
+                                                F(3, 3784)        =      24.94
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0148
+                                                Root MSE          =     538.63
+
+------------------------------------------------------------------------------
+             |             Robust HC3
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |  -25.46985   27.98388    -0.91   0.363    -80.33479     29.3951
+       after |    111.593   21.11375     5.29   0.000     70.19762    152.9885
+         did |   89.84424     36.506     2.46   0.014      18.2709    161.4176
+       _cons |   150.6902   16.70981     9.02   0.000     117.9291    183.4513
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, tex(fragment) label ///
+> title("Table 5 - Pooled OLS") ctitle(HC3 SE)
+questions56.tex
+dir : seeout
+
+. 
+. regress total_savingsw ever_treated after did, vce(cluster id)
+
+Linear regression                               Number of obs     =      3,788
+                                                F(3, 946)         =      27.05
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0148
+                                                Root MSE          =     538.63
+
+                                   (Std. Err. adjusted for 947 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |  -25.46985   27.93336    -0.91   0.362    -80.28837    29.34868
+       after |    111.593   18.15738     6.15   0.000     75.95965    147.2264
+         did |   89.84424   35.60056     2.52   0.012     19.97905    159.7094
+       _cons |   150.6902   16.69961     9.02   0.000     117.9176    183.4628
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, tex(fragment) label ///
+> title("Table 6 - Pooled OLS") ctitle("Clustered SE (by id)")
+questions56.tex
+dir : seeout
+
+. 
+. bootstrap, reps(1000): regress total_savingsw ever_treated after did, vce(cluster id)
+(running regress on estimation sample)
+
+Bootstrap replications (1000)
+----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5 
+..................................................    50
+..................................................   100
+..................................................   150
+..................................................   200
+..................................................   250
+..................................................   300
+..................................................   350
+..................................................   400
+..................................................   450
+..................................................   500
+..................................................   550
+..................................................   600
+..................................................   650
+..................................................   700
+..................................................   750
+..................................................   800
+..................................................   850
+..................................................   900
+..................................................   950
+..................................................  1000
+
+Linear regression                               Number of obs     =      3,788
+                                                Replications      =      1,000
+                                                Wald chi2(3)      =      84.03
+                                                Prob > chi2       =     0.0000
+                                                R-squared         =     0.0148
+                                                Adj R-squared     =     0.0140
+                                                Root MSE          =   538.6349
+
+                                    (Replications based on 947 clusters in id)
+------------------------------------------------------------------------------
+             |   Observed   Bootstrap                         Normal-based
+total_savi~w |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ever_treated |  -25.46985   29.34734    -0.87   0.385    -82.98958    32.04989
+       after |    111.593   18.23849     6.12   0.000     75.84627    147.3398
+         did |   89.84424   37.34327     2.41   0.016     16.65277    163.0357
+       _cons |   150.6902   16.65295     9.05   0.000      118.051    183.3294
+------------------------------------------------------------------------------
+
+. outreg2 using questions56, tex(fragment) label ///
+> title("Table 6 - Pooled OLS") ctitle(Bootstrapped SE)
+questions56.tex
+dir : seeout
+
+. 
+. ***************************************************************************
+. ******************** Question 7 *******************************************
+. ***************************************************************************
+. xtset id round
+       panel variable:  id (strongly balanced)
+        time variable:  round, 1 to 4
+                delta:  1 unit
+
+. label variable treated "Treatment dummy"
+
+. label variable social_income "Income from social programs"
+
+. label variable log_annual_expenditures "Annual expenditures (log)"
+
+. label variable remittances "Remittances (dummy)"
+
+. label variable employed "Employment status"
+
+. 
+. xtreg total_savingsw treated i.round , fe vce(cluster id)
+
+Fixed-effects (within) regression               Number of obs     =      3,788
+Group variable: id                              Number of groups  =        947
+
+R-sq:                                           Obs per group:
+     within  = 0.0234                                         min =          4
+     between = 0.0008                                         avg =        4.0
+     overall = 0.0135                                         max =          4
+
+                                                F(4,946)          =      20.16
+corr(u_i, Xb)  = -0.0126                        Prob > F          =     0.0000
+
+                                   (Std. Err. adjusted for 947 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     treated |   75.50867   36.62027     2.06   0.039      3.64231     147.375
+             |
+       round |
+          2  |   114.6097   21.16351     5.42   0.000     73.07689    156.1426
+          3  |   138.4134    22.0605     6.27   0.000     95.12026    181.7066
+          4  |   109.4255   22.29015     4.91   0.000     65.68164    153.1694
+             |
+       _cons |   142.7561    11.8277    12.07   0.000     119.5445    165.9676
+-------------+----------------------------------------------------------------
+     sigma_u |  349.42829
+     sigma_e |  473.96445
+         rho |  .35213495   (fraction of variance due to u_i)
+------------------------------------------------------------------------------
+
+. outreg2 using questions79, replace tex(fragment) label ///
+> ctitle ("Clustered by household") 
+questions79.tex
+dir : seeout
+
+. 
+. xtreg total_savingsw treated i.round, fe vce(cluster locality)
+
+Fixed-effects (within) regression               Number of obs      =      3788
+Group variable: id                              Number of groups   =       947
+
+R-sq:  within  = 0.0234                         Obs per group: min =         4
+       between = 0.0008                                        avg =       4.0
+       overall = 0.0135                                        max =         4
+
+                                                F(4,136)           =     17.64
+corr(u_i, Xb)  = -0.0126                        Prob > F           =    0.0000
+
+                             (Std. Err. adjusted for 137 clusters in locality)
+------------------------------------------------------------------------------
+             |               Robust
+total_savi~w |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     treated |   75.50867   39.41015     1.92   0.057    -2.427298    153.4446
+             |
+       round |
+          2  |   114.6097   22.83375     5.02   0.000     69.45462    159.7649
+          3  |   138.4134   25.64923     5.40   0.000     87.69052    189.1363
+          4  |   109.4255   23.75001     4.61   0.000     62.45841    156.3926
+             |
+       _cons |   142.7561   12.79721    11.16   0.000     117.4488    168.0633
+-------------+----------------------------------------------------------------
+     sigma_u |  349.42829
+     sigma_e |  473.96445
+         rho |  .35213495   (fraction of variance due to u_i)
+------------------------------------------------------------------------------
+
+. 
+. 
+. outreg2 using questions79, tex(fragment) label ///
+> ctitle ("Clustered by locality")
+questions79.tex
+dir : seeout
+
+. 
+. 
+. ***************************************************************************
+. ******************** Question 9 *******************************************
+. ***************************************************************************
+. xtreg total_savingsw social_income log_annual_expenditures remittances ///
+> employed treated i.round, fe vce(cluster id)
+
+Fixed-effects (within) regression               Number of obs     =      3,785
+Group variable: id                              Number of groups  =        947
+
+R-sq:                                           Obs per group:
+     within  = 0.0339                                         min =          3
+     between = 0.0462                                         avg =        4.0
+     overall = 0.0378                                         max =          4
+
+                                                F(8,946)          =      12.57
+corr(u_i, Xb)  = 0.0365                         Prob > F          =     0.0000
+
+                                              (Std. Err. adjusted for 947 clusters in id)
+-----------------------------------------------------------------------------------------
+                        |               Robust
+         total_savingsw |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+          social_income |   .0045939   .0023477     1.96   0.051    -.0000134    .0092012
+log_annual_expenditures |   36.30072   14.84437     2.45   0.015     7.169027    65.43242
+            remittances |   136.4577   36.17363     3.77   0.000     65.46786    207.4475
+               employed |   45.72755   30.60442     1.49   0.135    -14.33285    105.7879
+                treated |   74.13516   36.66408     2.02   0.043     2.182813    146.0875
+                        |
+                  round |
+                     2  |    107.106   21.17819     5.06   0.000     65.54438    148.6677
+                     3  |   127.2769   21.86759     5.82   0.000     84.36236    170.1915
+                     4  |   86.45843   22.91924     3.77   0.000     41.47999    131.4369
+                        |
+                  _cons |   -293.664   150.0876    -1.96   0.051    -588.2072    .8792348
+------------------------+----------------------------------------------------------------
+                sigma_u |  341.86359
+                sigma_e |  471.98484
+                    rho |  .34410133   (fraction of variance due to u_i)
+-----------------------------------------------------------------------------------------
+
+. outreg2 using questions79, tex(fragment) label ///
+> ctitle("Clustered by household")
+questions79.tex
+dir : seeout
+
+. 
+. xtreg total_savingsw social_income log_annual_expenditures remittances ///
+> employed treated i.round, fe vce(cluster locality)
+
+Fixed-effects (within) regression               Number of obs      =      3785
+Group variable: id                              Number of groups   =       947
+
+R-sq:  within  = 0.0339                         Obs per group: min =         3
+       between = 0.0462                                        avg =       4.0
+       overall = 0.0378                                        max =         4
+
+                                                F(8,136)           =     12.59
+corr(u_i, Xb)  = 0.0365                         Prob > F           =    0.0000
+
+                                        (Std. Err. adjusted for 137 clusters in locality)
+-----------------------------------------------------------------------------------------
+                        |               Robust
+         total_savingsw |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+          social_income |   .0045939     .00222     2.07   0.040     .0002037     .008984
+log_annual_expenditures |   36.30072   14.80992     2.45   0.016     7.013215    65.58823
+            remittances |   136.4577   33.42918     4.08   0.000     70.34946    202.5659
+               employed |   45.72755   31.09281     1.47   0.144    -15.76037    107.2155
+                treated |   74.13516   38.87025     1.91   0.059    -2.733132    151.0034
+                        |
+                  round |
+                     2  |    107.106   22.88734     4.68   0.000     61.84492    152.3671
+                     3  |   127.2769   25.83273     4.93   0.000     76.19115    178.3627
+                     4  |   86.45843   25.38099     3.41   0.001     36.26598    136.6509
+                        |
+                  _cons |   -293.664   144.1121    -2.04   0.044    -578.6545   -8.673455
+------------------------+----------------------------------------------------------------
+                sigma_u |  341.86359
+                sigma_e |  471.98484
+                    rho |  .34410133   (fraction of variance due to u_i)
+-----------------------------------------------------------------------------------------
+
+. outreg2 using questions79, tex(fragment) label ///
+> ctitle("Clustered by locality") ///
+> 
+questions79.tex
+dir : seeout
+
+. 
+. ***************************************************************************
+. ******************** Question 10 ******************************************
+. ***************************************************************************
+. gen trend_margloc=loc_margindex if round==1
+(2,851 missing values generated)
+
+. bysort id (round): replace trend_margloc=trend_margloc[_n-1]*2 if round==2
+(937 real changes made)
+
+. bysort id (round): replace trend_margloc=trend_margloc[_n-2]*3 if round==3
+(937 real changes made)
+
+. bysort id (round): replace trend_margloc=trend_margloc[_n-3]*4 if round==4
+(937 real changes made)
+
+. 
+. label variable trend_margloc "Marginality index trend"
+
+. xtreg total_savingsw social_income trend_margloc log_annual_expenditures ///
+> remittances employed i.round treated, fe vce(cluster id)
+
+Fixed-effects (within) regression               Number of obs     =      3,745
+Group variable: id                              Number of groups  =        937
+
+R-sq:                                           Obs per group:
+     within  = 0.0322                                         min =          3
+     between = 0.0395                                         avg =        4.0
+     overall = 0.0344                                         max =          4
+
+                                                F(9,936)          =      11.11
+corr(u_i, Xb)  = 0.0301                         Prob > F          =     0.0000
+
+                                              (Std. Err. adjusted for 937 clusters in id)
+-----------------------------------------------------------------------------------------
+                        |               Robust
+         total_savingsw |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+          social_income |   .0046729   .0023486     1.99   0.047     .0000637     .009282
+          trend_margloc |    4.29315   9.404389     0.46   0.648    -14.16298    22.74928
+log_annual_expenditures |   34.77475   14.88564     2.34   0.020     5.561661    63.98783
+            remittances |    123.317    35.8089     3.44   0.001     53.04201    193.5921
+               employed |   52.28919    30.7564     1.70   0.089      -8.0703    112.6487
+                        |
+                  round |
+                     2  |   110.9733   22.47335     4.94   0.000     66.86935    155.0773
+                     3  |   134.2858   27.24464     4.93   0.000      80.8182    187.7535
+                     4  |   99.96284   33.52687     2.98   0.003     34.16629    165.7594
+                        |
+                treated |   69.55376   36.77041     1.89   0.059    -2.608233    141.7157
+                  _cons |  -276.9653   151.5417    -1.83   0.068    -574.3661    20.43559
+------------------------+----------------------------------------------------------------
+                sigma_u |  343.29137
+                sigma_e |  471.84433
+                    rho |  .34611982   (fraction of variance due to u_i)
+-----------------------------------------------------------------------------------------
+
+. 
+. outreg2 using questions79, tex(fragment) label ctitle("Clustered by household")
+questions79.tex
+dir : seeout
+
+. 
+. xtreg total_savingsw social_income trend_margloc log_annual_expenditures ///
+> remittances employed i.round treated, fe vce(cluster locality)
+
+Fixed-effects (within) regression               Number of obs      =      3745
+Group variable: id                              Number of groups   =       937
+
+R-sq:  within  = 0.0322                         Obs per group: min =         3
+       between = 0.0395                                        avg =       4.0
+       overall = 0.0344                                        max =         4
+
+                                                F(9,133)           =     10.96
+corr(u_i, Xb)  = 0.0301                         Prob > F           =    0.0000
+
+                                        (Std. Err. adjusted for 134 clusters in locality)
+-----------------------------------------------------------------------------------------
+                        |               Robust
+         total_savingsw |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+          social_income |   .0046729   .0022156     2.11   0.037     .0002905    .0090553
+          trend_margloc |    4.29315    9.89044     0.43   0.665    -15.26976    23.85606
+log_annual_expenditures |   34.77475   14.63343     2.38   0.019     5.830389    63.71911
+            remittances |    123.317   32.95261     3.74   0.000     58.13805     188.496
+               employed |   52.28919   30.96998     1.69   0.094    -8.968222    113.5466
+                        |
+                  round |
+                     2  |   110.9733   23.44051     4.73   0.000     64.60892    157.3378
+                     3  |   134.2858   29.84302     4.50   0.000     75.25751    193.3142
+                     4  |   99.96284   37.69792     2.65   0.009     25.39782    174.5279
+                        |
+                treated |   69.55376   38.81281     1.79   0.075    -7.216486     146.324
+                  _cons |  -276.9653   141.1362    -1.96   0.052    -556.1273    2.196751
+------------------------+----------------------------------------------------------------
+                sigma_u |  343.29137
+                sigma_e |  471.84433
+                    rho |  .34611982   (fraction of variance due to u_i)
+-----------------------------------------------------------------------------------------
+
+. outreg2 using questions79, tex(fragment) label ctitle("Clustered by locality")
+questions79.tex
+dir : seeout
+
+. 
+. ***************************************************************************
+. ******************** Question 11 ******************************************
+. ***************************************************************************
+. clear all
+
+. use mexico_2014.dta
+
+. 
+. gen total_savingsw=total_savings
+(3 missing values generated)
+
+. quietly sum total_savings, det
+
+. replace total_savingsw=r(p95) if total_savings>r(p95) & total_savings<=r(max)
+(230 real changes made)
+
+. 
+. 
+. gen attritor=0
+
+. replace attritor=1 if numrounds<4
+(858 real changes made)
+
+. 
+. /*Is attrition correlated with treatment?*/
+. ttest attritor if round==1, by(ever_treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |   1,135    .4255507    .0146823    .4946442    .3967431    .4543582
+       1 |     323    .0866873    .0156805    .2818129    .0558382    .1175364
+---------+--------------------------------------------------------------------
+combined |   1,458    .3504801    .0124997     .477284    .3259609    .3749994
+---------+--------------------------------------------------------------------
+    diff |            .3388634    .0287702                .2824279    .3952988
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  11.7783
+Ho: diff = 0                                     degrees of freedom =     1456
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 1.0000         Pr(|T| > |t|) = 0.0000          Pr(T > t) = 0.0000
+
+. 
+. 
+. 
+. matrix test= r(mu_1) \ r(sd_1) \ r(mu_2) \ r(sd_2) \ r(mu_1)-r(mu_2) \ r(se) \ r(t)
+
+. 
+. 
+. matrix colnames test = "Attritor"
+
+. 
+. matrix stars = 0 \ 0 \ 0 \ 0 \ 0 \ 0 \ 3
+
+. 
+. 
+. quietly frmttable using question11, statmat(test) ///
+> noblankrows title("Table 8" \ "Attrition") /// 
+>         tex fragment replace rtitles( ///
+>         "Control Group", "Mean" \ "", "Standard deviation"\ ///
+>         "Treatment Group", "Mean" \ "", "Standard deviation"\ ///
+>         "Difference", "Mean" \ "", "Standard error"\" ","T-statistic") ///
+>         annotate(stars) asymbol(*,**,***)
+
+. 
+.         
+. 
+. /*Are attritors different from non-attritors?*/
+. /*Household-specific balance check*/
+. local index = 0
+
+. foreach x of varlist social_income female region_* age occup_* tap_water size_household owns_house
+> {
+  2.         quietly ttest `x' if round==1, by (attritor)
+  3.         if `index' != 0 {
+  4.                 matrix metrics = metrics \ r(mu_1), r(sd_1), r(mu_2), r(sd_2), r(mu_1) - r(mu_2
+> ), r(se), r(p)
+  5.         }
+  6.         else{
+  7.                 matrix metrics = r(mu_1), r(sd_1), r(mu_2) , r(sd_2), r(mu_1) - r(mu_2), r(se),
+>  r(p)
+  8.         }
+  9.         local index = `index' + 1
+ 10. }
+
+. 
+. 
+. 
+. matrix rownames metrics = "Social income" "Female" "Region (north)" ///
+> "Region (south)" "Age" "Self-employed" "Wage worker" ///
+> "Farmer" "Tap water (hh)" "Size household" "House property"
+
+. matrix metrics = metrics'
+
+. 
+. 
+. 
+. matrix stars=  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 0, 3, 0, 0, 0, 3, 1, 3, 0, 0
+
+.  
+. 
+. 
+. quietly frmttable using question11bis, statmat(metrics) ///
+> noblankrows /// 
+>         tex fragment replace rtitles( ///
+>         "Non-attritors", "Mean" \ "", "Standard deviation"\ ///
+>         "Attritors", "Mean" \ "", "Standard deviation"\ ///
+>         "Difference", "Mean" \ "", "Standard error"\" ","T-statistic") ///
+>          annotate(stars) asymbol(*,**, ***) 
+
+.         
+. /*Locality-specific balance check*/
+. local index = 0
+
+. foreach x of varlist loc_*{
+  2.         quietly ttest `x' if round==1, by (attritor)
+  3.         if `index' != 0 {
+  4.                 matrix metrics = metrics \ r(mu_1), r(sd_1), r(mu_2), r(sd_2), r(mu_1) - r(mu_2
+> ), r(se), r(t)
+  5.         }
+  6.         else{
+  7.                 matrix metrics = r(mu_1), r(sd_1), r(mu_2) , r(sd_2), r(mu_1) - r(mu_2), r(se),
+>  r(t)
+  8.         }
+  9.         local index = `index' + 1
+ 10. }
+
+. 
+. matrix rownames metrics = "Population" "Illiterate" "No primary school" ///
+> "No toilet" "No electricty" "No tap water" "Persons per room (loc)" "Earth floor (loc)" ///
+> "Less than 2 min wage" "Marginality index" 
+
+. 
+. matrix metrics = metrics'
+
+. 
+. matrix stars=  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \ ///
+>  0, 3, 3, 0, 0, 3, 1, 3, 0, 3
+
+. 
+. quietly frmttable using question11ter, statmat(metrics) ///
+> noblankrows /// 
+>         tex fragment replace rtitles( ///
+>         "Non-attritors", "Mean" \ "", "Standard deviation"\ ///
+>         "Attritors", "Mean" \ "", "Standard deviation"\ ///
+>         "Difference", "Mean" \ "", "Standard error"\" ","T-statistic") ///
+>         annotate(stars) asymbol(*,**, ***)      
+
+. 
+. /*Regression with interactions*/
+. 
+. keep if round==1
+(3,188 observations deleted)
+
+. foreach x of varlist social_income female region_* age occup_* loc_* {
+  2. gen ever_treated_`x'=ever_treated*`x'
+  3. }
+(1 missing value generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+(20 missing values generated)
+
+. 
+. regress attritor ever_treated_*, vce(cluster id)
+
+Linear regression                               Number of obs     =      1,437
+                                                F(18, 1436)       =      22.43
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0923
+                                                Root MSE          =     .45684
+
+                                                     (Std. Err. adjusted for 1,437 clusters in id)
+--------------------------------------------------------------------------------------------------
+                                 |               Robust
+                        attritor |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+---------------------------------+----------------------------------------------------------------
+      ever_treated_social_income |  -7.07e-07   4.34e-06    -0.16   0.871    -9.22e-06    7.80e-06
+             ever_treated_female |   .0039248   .0405698     0.10   0.923    -.0756576    .0835072
+       ever_treated_region_north |   -.006435   .0864058    -0.07   0.941    -.1759302    .1630602
+       ever_treated_region_south |  -.0768984   .0641513    -1.20   0.231    -.2027387    .0489419
+                ever_treated_age |  -.0004524   .0010831    -0.42   0.676     -.002577    .0016723
+ever_treated_occup_self_employed |   .0336407   .0646737     0.52   0.603    -.0932244    .1605058
+  ever_treated_occup_wage_worker |   .0001166   .0403539     0.00   0.998    -.0790423    .0792754
+       ever_treated_occup_farmer |   .0285502    .046236     0.62   0.537    -.0621472    .1192477
+     ever_treated_loc_population |   1.62e-08   1.19e-07     0.14   0.892    -2.18e-07    2.50e-07
+     ever_treated_loc_illiterate |   .0085819    .006485     1.32   0.186    -.0041391    .0213029
+      ever_treated_loc_noprimary |  -.0073484   .0046382    -1.58   0.113    -.0164468      .00175
+       ever_treated_loc_notoilet |  -.0017071   .0013552    -1.26   0.208    -.0043655    .0009514
+  ever_treated_loc_noelectricity |   -.003549   .0017274    -2.05   0.040    -.0069375   -.0001605
+     ever_treated_loc_notapwater |  -.0000311   .0017097    -0.02   0.986    -.0033848    .0033227
+        ever_treated_loc_perroom |   .0206207   .1545504     0.13   0.894    -.2825481    .3237894
+    ever_treated_loc_earth_floor |   .0002393   .0015763     0.15   0.879    -.0028527    .0033314
+   ever_treated_loc_less2minwage |    .000531   .0032888     0.16   0.872    -.0059204    .0069824
+      ever_treated_loc_margindex |   .1027244   .0489804     2.10   0.036     .0066437    .1988052
+                           _cons |   .4239714   .0148785    28.50   0.000     .3947854    .4531573
+--------------------------------------------------------------------------------------------------
+
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 
+> 4\Problem set 4 - Andreottola Bader Ciasullo Funck.log
+  log type:  text
+ closed on:  10 May 2017, 21:48:06
+----------------------------------------------------------------------------------------------------

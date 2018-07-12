@@ -1,0 +1,2204 @@
+-----------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 1
+> \assignment1.log
+  log type:  text
+ opened on:  29 Mar 2017, 22:21:27
+
+. 
+. ***************************************************************************
+. *********************Problem 1.1*******************************************
+. ***************************************************************************
+. 
+. 
+. use jtrain2
+
+. 
+. *point a
+. 
+. local index = 0
+
+. foreach x of varlist age educ black hisp nodegree re74 re75{
+  2.         quietly ttest `x', by (train)
+  3.         if `index' != 0 {
+  4.                 matrix metrics = metrics \ r(mu_2), r(mu_1), r(sd_2), r(sd_1), r(mu_1) - r(mu_2)
+> , r(se), r(p)
+  5.         }
+  6.         else{
+  7.                 matrix metrics = r(mu_2), r(sd_2), r(mu_1) , r(sd_1), r(mu_1) - r(mu_2), r(se), 
+> r(p)
+  8.         }
+  9.         local index = `index' + 1
+ 10. }
+
+. matrix rownames metrics = "age" "educ" "black" "hisp" "nodegree" "re74" "re75"
+
+. 
+. matrix metrics = metrics'
+
+. quietly frmttable using table1, statmat(metrics) ///
+> noblankrows title("Table 1" \ "Dataset: jtrain2") /// 
+>         tex replace rtitles( ///
+>         "Treatment Group", "mean" \ "", "sd"\ ///
+>         "Control Group", "mean" \ "", "sd"\ ///
+>         "Difference", "mean" \ "", "se"\" ","p-value")
+
+.         
+. *point b
+. regress re78 train, vce(robust) //We implement the heteroskedasticity robust estimator.
+
+Linear regression                               Number of obs     =        445
+                                                F(1, 443)         =       7.15
+                                                Prob > F          =     0.0078
+                                                R-squared         =     0.0178
+                                                Root MSE          =     6.5795
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   1.794343   .6708247     2.67   0.008     .4759489    3.112737
+       _cons |   4.554802   .3402038    13.39   0.000     3.886188    5.223416
+------------------------------------------------------------------------------
+
+. matrix betas=e(b)
+
+. scalar coeff=betas[1,1]
+
+. matrix sterrors=e(V)
+
+. scalar se=sterrors[1,1]
+
+. outreg2 using mymodels, replace tex ///
+> title("Table 4. Model specifications") ctitle(jtrain2 - mod1)
+mymodels.tex
+dir : seeout
+
+. estimates store mod1
+
+. ttest re78, by(train)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     260    4.554802    .3400931    5.483837    3.885103    5.224502
+       1 |     185    6.349145    .5784231    7.867405    5.207951     7.49034
+---------+--------------------------------------------------------------------
+combined |     445    5.300765    .3143629    6.631493    4.682941    5.918589
+---------+--------------------------------------------------------------------
+    diff |           -1.794343    .6328536               -3.038111   -.5505748
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -2.8353
+Ho: diff = 0                                     degrees of freedom =      443
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0024         Pr(|T| > |t|) = 0.0048          Pr(T > t) = 0.9976
+
+. scalar diffmeans=r(mu_2)-r(mu_1)
+
+. display diffmeans-coeff
+3.109e-15
+
+. 
+. /* The coefficient obtained from mod1 is equal to the simple difference in mean
+> outcomes between treatment and control groups. */
+. 
+. *point c
+. regress re78 train age educ black hisp, vce(robust)
+
+Linear regression                               Number of obs     =        445
+                                                F(5, 439)         =       4.55
+                                                Prob > F          =     0.0005
+                                                R-squared         =     0.0478
+                                                Root MSE          =     6.5079
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   1.685979   .6539576     2.58   0.010     .4007026    2.971256
+         age |   .0552986   .0372272     1.49   0.138    -.0178671    .1284643
+        educ |   .4149953   .1612432     2.57   0.010     .0980908    .7318998
+       black |  -2.229071   .9891567    -2.25   0.025    -4.173142   -.2849995
+        hisp |    .088537   1.337581     0.07   0.947    -2.540322    2.717396
+       _cons |   .8164305    2.31441     0.35   0.724     -3.73227    5.365131
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(jtrain2 - mod2)
+mymodels.tex
+dir : seeout
+
+. estimates store mod2
+
+. 
+. 
+. *point d
+. regress re78 train age educ black hisp re74 re75, vce(robust)
+
+Linear regression                               Number of obs     =        445
+                                                F(7, 437)         =       3.43
+                                                Prob > F          =     0.0014
+                                                R-squared         =     0.0548
+                                                Root MSE          =     6.4988
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   1.680049   .6565083     2.56   0.011     .3897432    2.970356
+         age |   .0543452   .0372134     1.46   0.145    -.0187943    .1274847
+        educ |   .4035985   .1549643     2.60   0.010     .0990305    .7081665
+       black |  -2.180068   1.004082    -2.17   0.030    -4.153499   -.2066377
+        hisp |   .1435597   1.352448     0.11   0.916    -2.514552    2.801671
+        re74 |   .0833058   .1063871     0.78   0.434    -.1257881    .2923997
+        re75 |   .0467654   .1198593     0.39   0.697    -.1888069    .2823377
+       _cons |   .6740724   2.325163     0.29   0.772    -3.895821    5.243965
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(jtrain2 - mod3)
+mymodels.tex
+dir : seeout
+
+. estimates store mod3
+
+. esttab mod1 mod2 mod3
+
+------------------------------------------------------------
+                      (1)             (2)             (3)   
+                     re78            re78            re78   
+------------------------------------------------------------
+train               1.794**         1.686*          1.680*  
+                   (2.67)          (2.58)          (2.56)   
+
+age                                0.0553          0.0543   
+                                   (1.49)          (1.46)   
+
+educ                                0.415*          0.404** 
+                                   (2.57)          (2.60)   
+
+black                              -2.229*         -2.180*  
+                                  (-2.25)         (-2.17)   
+
+hisp                               0.0885           0.144   
+                                   (0.07)          (0.11)   
+
+re74                                               0.0833   
+                                                   (0.78)   
+
+re75                                               0.0468   
+                                                   (0.39)   
+
+_cons               4.555***        0.816           0.674   
+                  (13.39)          (0.35)          (0.29)   
+------------------------------------------------------------
+N                     445             445             445   
+------------------------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. 
+. ***************************************************************************
+. *********************Problem 1.2*******************************************
+. ***************************************************************************
+. 
+. clear all
+
+. use jtrain3
+
+. *point a
+. local index = 0
+
+. foreach x of varlist age educ black hisp re74 re75{
+  2.         quietly ttest `x', by (train)
+  3.         if `index' == 4 {  // nodegree is not in the second dataset
+  4.                 matrix metrics_2 = metrics_2 \ ., ., ., ., ., ., .
+  5.         }
+  6.         if `index' != 0 {
+  7.                 matrix metrics_2 = metrics_2 \ r(mu_2), r(sd_2), r(mu_1), r(sd_1), r(mu_1) - r(m
+> u_2), r(se), r(p)
+  8.         }
+  9.         else{
+ 10.                 matrix metrics_2 = r(mu_2),r(sd_2), r(mu_1), r(sd_1), r(mu_1) - r(mu_2), r(se), 
+> r(p)
+ 11.         }
+ 12.         local index = `index' + 1
+ 13. }
+
+. 
+. matrix rownames metrics_2 = "age" "educ" "black" "hisp" "nodegree" "re74" "re75"
+
+. 
+. matrix metrics_2 = metrics_2'
+
+. 
+. quietly frmttable using table1, statmat(metrics_2) ///
+> noblankrows title("Table 2" \ "Dataset: jtrain3") /// 
+>         tex addtable rtitles( ///
+>         "Treatment Group", "mean" \ "", "sd"\ ///
+>         "Control Group", "mean" \ "", "sd"\ ///
+>         "Difference", "mean" \ "", "se" \ "", "p-value")
+
+. 
+. 
+. *point b
+. set seed 42
+
+. gen random = runiform()
+
+. quietly sum random, detail
+
+. gen treated = random > r(p50)
+
+. drop random
+
+. 
+. sum treated if treated==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+     treated |      1,337           1           0          1          1
+
+. sum treated if treated==0
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+     treated |      1,338           0           0          0          0
+
+. /*Remark: the number of units randomly assigned to treatment is (n/2)-1. */
+. 
+. *point c
+. local index = 0
+
+. foreach x of varlist age educ black hisp re74 re75{
+  2.         quietly ttest `x', by (treated)
+  3.         if `index' == 4 {  // nodegree is not in the second dataset
+  4.                 matrix metrics_3 = metrics_3 \ ., ., ., ., ., ., .
+  5.         }
+  6.         if `index' != 0 {
+  7.                 matrix metrics_3 = metrics_3 \ r(mu_2), r(sd_2), r(mu_1), r(sd_1), r(mu_1) - r(m
+> u_2), r(se), r(p)
+  8.         }
+  9.         else{
+ 10.                 matrix metrics_3 = r(mu_2),r(sd_2), r(mu_1), r(sd_1), r(mu_1) - r(mu_2), r(se), 
+> r(p)
+ 11.         }
+ 12.         local index = `index' + 1
+ 13. }
+
+. 
+. matrix rownames metrics_3 = "age" "educ" "black" "hisp" "nodegree" "re74" "re75"
+
+. 
+. matrix metrics_3 = metrics_3'
+
+. 
+. quietly frmttable using table1, statmat(metrics_3) ///
+> noblankrows title("Table 3" \ "Dataset: jtrain3; randomly allocated treatment") /// 
+>         tex addtable rtitles( ///
+>         "Treatment Group", "mean" \ "", "sd"\ ///
+>         "Control Group", "mean" \ "", "sd"\ ///
+>         "Difference", "mean" \ "", "se"\"", "p-value")
+
+. 
+. *point d
+. regress re78 treated, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(1, 2673)        =       3.17
+                                                Prob > F          =     0.0753
+                                                R-squared         =     0.0012
+                                                Root MSE          =     15.626
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     treated |   1.075028   .6042609     1.78   0.075    -.1098386    2.259894
+       _cons |   19.96506   .4230182    47.20   0.000     19.13559    20.79454
+------------------------------------------------------------------------------
+
+. 
+. 
+. matrix betas=e(b)
+
+. scalar coeff=betas[1,1]
+
+. matrix sterrors=e(V)
+
+. scalar se=sterrors[1,1]
+
+. ttest re78, by(treated)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |   1,338    19.96506    .4230181    15.47345    19.13521    20.79491
+       1 |   1,337    21.04009    .4314939    15.77758    20.19361    21.88657
+---------+--------------------------------------------------------------------
+combined |   2,675    20.50238    .3022505    15.63252    19.90971    21.09504
+---------+--------------------------------------------------------------------
+    diff |           -1.075028    .6042566               -2.259885      .10983
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -1.7791
+Ho: diff = 0                                     degrees of freedom =     2673
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0377         Pr(|T| > |t|) = 0.0753          Pr(T > t) = 0.9623
+
+. drop treated 
+
+. scalar diffmeans=r(mu_2)-r(mu_1)
+
+. display diffmeans-coeff
+2.665e-15
+
+. 
+. 
+. *point e 
+. regress re78 train, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(1, 2673)        =     537.36
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0609
+                                                Root MSE          =     15.152
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -15.20478   .6559143   -23.18   0.000    -16.49093   -13.91863
+       _cons |   21.55392    .311785    69.13   0.000     20.94256    22.16529
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(jtrain3 - mod4)
+mymodels.tex
+dir : seeout
+
+. estimates store mod1b
+
+. 
+. 
+. *point f
+. regress re78 train age educ black hisp, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(5, 2669)        =     162.27
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.2007
+                                                Root MSE          =     13.989
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -8.452086   .7411853   -11.40   0.000    -9.905441    -6.99873
+         age |   .1961468   .0294731     6.66   0.000     .1383543    .2539393
+        educ |   1.768315   .1092449    16.19   0.000     1.554101    1.982528
+       black |  -3.166033   .5740444    -5.52   0.000    -4.291649   -2.040416
+        hisp |   1.011616   1.668438     0.61   0.544    -2.259947    4.283179
+       _cons |  -5.947839   1.978897    -3.01   0.003    -9.828165   -2.067513
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(jtrain3 - mod5)
+mymodels.tex
+dir : seeout
+
+. estimates store mod2b
+
+. 
+. 
+. *point g
+. regress re78 train age educ black hisp re74 re75, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(7, 2667)        =     284.31
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.5856
+                                                Root MSE          =     10.077
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   .2132254    .751744     0.28   0.777    -1.260835    1.687286
+         age |  -.0750666   .0204466    -3.67   0.000    -.1151594   -.0349738
+        educ |   .5200606    .088241     5.89   0.000     .3470328    .6930883
+       black |  -.6477141   .4381372    -1.48   0.139    -1.506837    .2114089
+        hisp |   2.202615    1.22055     1.80   0.071    -.1907044    4.595934
+        re74 |   .2809811   .0617852     4.55   0.000     .1598292    .4021329
+        re75 |   .5692884   .0666195     8.55   0.000     .4386573    .6999196
+       _cons |   1.647553    1.44806     1.14   0.255    -1.191881    4.486986
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(jtrain3 - mod6)
+mymodels.tex
+dir : seeout
+
+. estimates store mod3b
+
+. 
+. 
+. *point h
+. esttab mod1b mod2b mod3b
+
+------------------------------------------------------------
+                      (1)             (2)             (3)   
+                     re78            re78            re78   
+------------------------------------------------------------
+train              -15.20***       -8.452***        0.213   
+                 (-23.18)        (-11.40)          (0.28)   
+
+age                                 0.196***      -0.0751***
+                                   (6.66)         (-3.67)   
+
+educ                                1.768***        0.520***
+                                  (16.19)          (5.89)   
+
+black                              -3.166***       -0.648   
+                                  (-5.52)         (-1.48)   
+
+hisp                                1.012           2.203   
+                                   (0.61)          (1.80)   
+
+re74                                                0.281***
+                                                   (4.55)   
+
+re75                                                0.569***
+                                                   (8.55)   
+
+_cons               21.55***       -5.948**         1.648   
+                  (69.13)         (-3.01)          (1.14)   
+------------------------------------------------------------
+N                    2675            2675            2675   
+------------------------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. 
+. *point i
+. logit train age educ black hisp 
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood = -548.86008  
+Iteration 2:   log likelihood = -451.22767  
+Iteration 3:   log likelihood = -445.54543  
+Iteration 4:   log likelihood = -445.48077  
+Iteration 5:   log likelihood = -445.48076  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(4)        =     454.34
+                                                Prob > chi2       =     0.0000
+Log likelihood = -445.48076                     Pseudo R2         =     0.3377
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |  -.1320748   .0126665   -10.43   0.000    -.1569008   -.1072488
+        educ |  -.2292395   .0386296    -5.93   0.000    -.3049521   -.1535268
+       black |    2.74895   .2621999    10.48   0.000     2.235048    3.262852
+        hisp |   2.177318   .4222033     5.16   0.000     1.349815    3.004822
+       _cons |   2.136474   .7024242     3.04   0.002     .7597477      3.5132
+------------------------------------------------------------------------------
+
+. predict pscore
+(option pr assumed; Pr(train))
+
+. 
+. gen pscoreTreat = pscore if train==1
+(2,490 missing values generated)
+
+. gen pscoreControl = pscore if train==0
+(185 missing values generated)
+
+. 
+. sum pscoreTreat 
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ pscoreTreat |        185    .2953871     .192525   .0015194   .7563259
+
+. scalar minTreat = r(min)
+
+. scalar maxTreat = r(max)
+
+. 
+. sum pscoreControl
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+pscoreCont~l |      2,490    .0523508    .0984653   .0001204   .7311699
+
+. scalar minControl = r(min)
+
+. scalar maxControl = r(max)
+
+. 
+. scalar min = max(minControl,minTreat)
+
+. scalar max = min(maxControl,maxTreat)
+
+. 
+. gen comsup=0
+
+. replace comsup=1 if pscore>=min & pscore<=max
+(2,235 real changes made)
+
+. 
+. sum comsup if comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      comsup |      2,235           1           0          1          1
+
+. 
+. drop pscoreTreat
+
+. drop pscoreControl
+
+. /*The common support is built as the intersection of p-scores for treated and
+> controls. */
+. 
+. sum train if train==1 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |        183           1           0          1          1
+
+. local treatedunits=r(N)
+
+. sum train if train==0 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |      2,052           0           0          0          0
+
+. local controlunits=r(N)
+
+. regress re78 train age educ black hisp if comsup==1, vce(robust)
+
+Linear regression                               Number of obs     =      2,235
+                                                F(5, 2229)        =     129.20
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.1854
+                                                Root MSE          =     12.723
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -8.535337   .7419729   -11.50   0.000    -9.990367   -7.080307
+         age |    .198397   .0343311     5.78   0.000     .1310727    .2657214
+        educ |   1.517441   .1176942    12.89   0.000     1.286639    1.748243
+       black |  -3.624317    .584988    -6.20   0.000    -4.771496   -2.477139
+        hisp |   .5961403    1.66582     0.36   0.720    -2.670581    3.862861
+       _cons |  -2.951549   2.176285    -1.36   0.175    -7.219306    1.316209
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex addstat("Number of treated units", ///
+> `treatedunits',"Number of control units", `controlunits') ctitle(pscore - mod7)
+mymodels.tex
+dir : seeout
+
+. 
+. estimates store mod4a
+
+. esttab mod2b mod4a
+
+--------------------------------------------
+                      (1)             (2)   
+                     re78            re78   
+--------------------------------------------
+train              -8.452***       -8.535***
+                 (-11.40)        (-11.50)   
+
+age                 0.196***        0.198***
+                   (6.66)          (5.78)   
+
+educ                1.768***        1.517***
+                  (16.19)         (12.89)   
+
+black              -3.166***       -3.624***
+                  (-5.52)         (-6.20)   
+
+hisp                1.012           0.596   
+                   (0.61)          (0.36)   
+
+_cons              -5.948**        -2.952   
+                  (-3.01)         (-1.36)   
+--------------------------------------------
+N                    2675            2235   
+--------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. drop comsup
+
+. 
+. logit train age educ black hisp re74 re75
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood =  -494.6625  
+Iteration 2:   log likelihood = -312.39664  
+Iteration 3:   log likelihood = -262.63502  
+Iteration 4:   log likelihood = -255.53539  
+Iteration 5:   log likelihood = -255.46039  
+Iteration 6:   log likelihood = -255.46036  
+Iteration 7:   log likelihood = -255.46036  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(6)        =     834.38
+                                                Prob > chi2       =     0.0000
+Log likelihood = -255.46036                     Pseudo R2         =     0.6202
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |  -.1163428   .0138964    -8.37   0.000    -.1435793   -.0891063
+        educ |   -.073817   .0488744    -1.51   0.131     -.169609    .0219749
+       black |   2.515007   .3067295     8.20   0.000     1.913829    3.116186
+        hisp |   2.209666   .5228082     4.23   0.000      1.18498    3.234351
+        re74 |  -.1483104   .0294957    -5.03   0.000    -.2061208   -.0904999
+        re75 |  -.2713162   .0389547    -6.96   0.000    -.3476659   -.1949664
+       _cons |   2.590438   .8753593     2.96   0.003     .8747658    4.306111
+------------------------------------------------------------------------------
+Note: 212 failures and 0 successes completely determined.
+
+. predict pscore_2
+(option pr assumed; Pr(train))
+
+. 
+. gen pscoreTreat = pscore_2 if train==1
+(2,490 missing values generated)
+
+. gen pscoreControl = pscore_2 if train==0
+(185 missing values generated)
+
+. 
+. sum pscoreTreat 
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ pscoreTreat |        185    .5977198     .284103   .0001951   .9315597
+
+. scalar minTreat = r(min)
+
+. scalar maxTreat = r(max)
+
+. 
+. sum pscoreControl
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+pscoreCont~l |      2,490    .0298883     .100458   1.49e-29   .8731372
+
+. scalar minControl = r(min)
+
+. scalar maxControl = r(max)
+
+. 
+. scalar min = max(minControl,minTreat)
+
+. scalar max = min(maxControl,maxTreat)
+
+. 
+. gen comsup=0
+
+. replace comsup=1 if pscore_2>=min & pscore_2<=max
+(1,323 real changes made)
+
+. 
+. sum comsup if comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      comsup |      1,323           1           0          1          1
+
+. 
+. 
+. drop pscoreTreat
+
+. drop pscoreControl
+
+. 
+. sum train if train==1 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |        157           1           0          1          1
+
+. local treatedunits_2=r(N)
+
+. sum train if train==0 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |      1,166           0           0          0          0
+
+. local controlunits_2=r(N)
+
+. regress re78 train age educ black hisp re74 re75 if comsup==1, vce(robust)
+
+Linear regression                               Number of obs     =      1,323
+                                                F(7, 1315)        =     138.67
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3221
+                                                Root MSE          =     8.7658
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   .8375984   .8818432     0.95   0.342    -.8923749    2.567572
+         age |  -.0836209   .0283454    -2.95   0.003    -.1392281   -.0280137
+        educ |    .480591   .1161511     4.14   0.000     .2527293    .7084528
+       black |  -.7580615   .5393634    -1.41   0.160    -1.816168    .3000452
+        hisp |   2.157868    1.51387     1.43   0.154    -.8119967    5.127732
+        re74 |   .3537965    .080758     4.38   0.000      .195368     .512225
+        re75 |   .5361192   .0821255     6.53   0.000     .3750078    .6972306
+       _cons |    1.77256   2.196886     0.81   0.420    -2.537224    6.082343
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex addstat("Number of treated units", ///
+> `treatedunits_2',"Number of control units", `controlunits_2') ctitle(pscore - mod8)
+mymodels.tex
+dir : seeout
+
+. estimates store mod4b
+
+. esttab mod2b mod4a mod4b
+
+------------------------------------------------------------
+                      (1)             (2)             (3)   
+                     re78            re78            re78   
+------------------------------------------------------------
+train              -8.452***       -8.535***        0.838   
+                 (-11.40)        (-11.50)          (0.95)   
+
+age                 0.196***        0.198***      -0.0836** 
+                   (6.66)          (5.78)         (-2.95)   
+
+educ                1.768***        1.517***        0.481***
+                  (16.19)         (12.89)          (4.14)   
+
+black              -3.166***       -3.624***       -0.758   
+                  (-5.52)         (-6.20)         (-1.41)   
+
+hisp                1.012           0.596           2.158   
+                   (0.61)          (0.36)          (1.43)   
+
+re74                                                0.354***
+                                                   (4.38)   
+
+re75                                                0.536***
+                                                   (6.53)   
+
+_cons              -5.948**        -2.952           1.773   
+                  (-3.01)         (-1.36)          (0.81)   
+------------------------------------------------------------
+N                    2675            2235            1323   
+------------------------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. 
+. drop comsup
+
+. 
+. *point j
+. graph twoway ///
+> (histogram pscore if train==1, fraction lcolor(blue)fcolor(ltblue)lwidth(medthick)) ///
+> (histogram pscore if train==0, fraction lcolor(red) fcolor(erose)lwidth(medthick)) ///
+> , ///
+> legend(order(1 "Treatment group" 2 "Control group"))
+
+. graph export histogram_pscore.png, replace
+(file histogram_pscore.png written in PNG format)
+
+. 
+. graph twoway ///
+> (histogram pscore_2 if train==1, fraction lcolor(blue)fcolor(ltblue)lwidth(medthick)) ///
+> (histogram pscore_2 if train==0, fraction lcolor(red) fcolor(erose)lwidth(medthick)) ///
+> , ///
+> legend(order(1 "Treatment group" 2 "Control group"))
+
+. graph export histogram_pscore2.png, replace
+(file histogram_pscore2.png written in PNG format)
+
+. 
+. drop pscore
+
+. drop pscore_2
+
+. 
+. 
+. *point l
+. generate age2=age^2
+
+. generate educ2=educ^2
+
+. generate re742=re74^2
+
+. generate re752=re75^2
+
+. generate blacku74=black*unem74
+
+. 
+. pscore train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> pscore(pscore_BI) blockid(myblock) comsup numblo(5) level(0.005) logit
+
+
+
+**************************************************** 
+Algorithm to estimate the propensity score 
+**************************************************** 
+
+
+The treatment is train
+
+   =1 if in |
+        job |
+   training |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,490       93.08       93.08
+          1 |        185        6.92      100.00
+------------+-----------------------------------
+      Total |      2,675      100.00
+
+
+
+Estimation of the propensity score 
+
+Iteration 0:   log likelihood = -672.64954
+Iteration 1:   log likelihood = -506.34387
+Iteration 2:   log likelihood = -385.59361
+Iteration 3:   log likelihood = -253.47059
+Iteration 4:   log likelihood =  -239.0094
+Iteration 5:   log likelihood =  -216.4621
+Iteration 6:   log likelihood =  -209.4284
+Iteration 7:   log likelihood = -205.15188
+Iteration 8:   log likelihood = -204.97707
+Iteration 9:   log likelihood = -204.97538
+Iteration 10:  log likelihood = -204.97536
+
+Logistic regression                               Number of obs   =       2675
+                                                  LR chi2(12)     =     935.35
+                                                  Prob > chi2     =     0.0000
+Log likelihood = -204.97536                       Pseudo R2       =     0.6953
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .3316903   .1203299     2.76   0.006     .0958481    .5675325
+        age2 |  -.0063668   .0018554    -3.43   0.001    -.0100033   -.0027303
+        educ |   .8492681   .3477059     2.44   0.015     .1677771    1.530759
+       educ2 |  -.0506202   .0172493    -2.93   0.003    -.0844282   -.0168122
+     married |  -1.885542   .2993309    -6.30   0.000    -2.472219   -1.298864
+       black |   1.135972   .3517854     3.23   0.001     .4464853    1.825459
+        hisp |    1.96902   .5668595     3.47   0.001     .8579958    3.080044
+        re74 |  -.1058961   .0352518    -3.00   0.003    -.1749883    -.036804
+        re75 |  -.2168539   .0414223    -5.24   0.000    -.2980401   -.1356677
+       re742 |   .0023892   .0006429     3.72   0.000     .0011291    .0036493
+       re752 |   .0001359   .0006651     0.20   0.838    -.0011676    .0014394
+    blacku74 |   2.144131    .426815     5.02   0.000     1.307589    2.980673
+       _cons |  -7.474742   2.443511    -3.06   0.002    -12.26394   -2.685549
+------------------------------------------------------------------------------
+Note: 22 failures and 0 successes completely determined.
+
+
+
+Note: the common support option has been selected
+The region of common support is [.00061066, .97525407]
+
+
+
+Description of the estimated propensity score 
+in region of common support 
+
+                 Estimated propensity score
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     .0006426       .0006107
+ 5%     .0008025       .0006149
+10%     .0010932       .0006159       Obs               1,342
+25%     .0023546        .000618       Sum of Wgt.       1,342
+
+50%     .0106667                      Mean           .1377463
+                        Largest       Std. Dev.      .2746627
+75%     .0757122        .974804
+90%     .6250822       .9749805       Variance       .0754396
+95%      .949302       .9752243       Skewness       2.185181
+99%      .970598       .9752541       Kurtosis       6.360726
+
+
+
+****************************************************** 
+Step 1: Identification of the optimal number of blocks 
+Use option detail if you want more detailed output 
+****************************************************** 
+
+
+The final number of blocks is 7
+
+This number of blocks ensures that the mean propensity score
+is not different for treated and controls in each block
+
+
+
+********************************************************** 
+Step 2: Test of balancing property of the propensity score 
+Use option detail if you want more detailed output 
+********************************************************** 
+
+
+The balancing property is satisfied 
+
+
+This table shows the inferior bound, the number of treated
+and the number of controls for each block 
+
+  Inferior |
+  of block | =1 if in job training
+of pscore  |         0          1 |     Total
+-----------+----------------------+----------
+  .0006107 |       924          7 |       931 
+       .05 |       102          4 |       106 
+        .1 |        56          7 |        63 
+        .2 |        41         28 |        69 
+        .4 |        14         21 |        35 
+        .6 |        13         20 |        33 
+        .8 |         7         98 |       105 
+-----------+----------------------+----------
+     Total |     1,157        185 |     1,342 
+
+Note: the common support option has been selected
+
+
+******************************************* 
+End of the algorithm to estimate the pscore 
+******************************************* 
+
+. 
+. 
+. sum train if train==1 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |        185           1           0          1          1
+
+. local treatedunits_3=r(N)
+
+. sum train if train==0 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |      1,157           0           0          0          0
+
+. local controlunits_3=r(N)
+
+. regress re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 ///
+> blacku74 if comsup==1, vce(robust)
+
+Linear regression                               Number of obs     =      1,342
+                                                F(13, 1328)       =     328.41
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3909
+                                                Root MSE          =     8.6324
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -.0984108   .8980982    -0.11   0.913    -1.860257    1.663435
+         age |   .4382129    .175521     2.50   0.013     .0938842    .7825416
+        age2 |   -.008286   .0025089    -3.30   0.001    -.0132079   -.0033641
+        educ |  -.2402629   .5649327    -0.43   0.671    -1.348521     .867995
+       educ2 |   .0307913    .029741     1.04   0.301    -.0275532    .0891359
+     married |   1.255059   .5548055     2.26   0.024     .1666685     2.34345
+       black |  -1.231519   .5464598    -2.25   0.024    -2.303537   -.1595005
+        hisp |   1.836515   1.045885     1.76   0.079    -.2152517    3.888282
+        re74 |   .4097154   .0939384     4.36   0.000     .2254316    .5939992
+        re75 |   .5203733   .1023725     5.08   0.000     .3195439    .7212027
+       re742 |  -.0035956   .0013381    -2.69   0.007    -.0062206   -.0009705
+       re752 |   .0006794   .0010712     0.63   0.526    -.0014221    .0027809
+    blacku74 |   3.195693    .866271     3.69   0.000     1.496284    4.895102
+       _cons |  -2.643878   3.915356    -0.68   0.500    -10.32484     5.03708
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex addstat("Number of treated units", ///
+> `treatedunits_3',"Number of control units", `controlunits_3') ctitle(pscore - mod9)
+mymodels.tex
+dir : seeout
+
+. estimates store  modpscore1
+
+. drop comsup
+
+. 
+. pscore train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> pscore(pscore) blockid(myblock) comsup numblo(5) level(0.005)
+
+
+
+**************************************************** 
+Algorithm to estimate the propensity score 
+**************************************************** 
+
+
+The treatment is train
+
+   =1 if in |
+        job |
+   training |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,490       93.08       93.08
+          1 |        185        6.92      100.00
+------------+-----------------------------------
+      Total |      2,675      100.00
+
+
+
+Estimation of the propensity score 
+
+Iteration 0:   log likelihood = -672.64954
+Iteration 1:   log likelihood = -299.28363
+Iteration 2:   log likelihood = -245.65466
+Iteration 3:   log likelihood = -219.29838
+Iteration 4:   log likelihood = -209.78894
+Iteration 5:   log likelihood = -208.38671
+Iteration 6:   log likelihood = -208.34688
+Iteration 7:   log likelihood =  -208.3468
+
+Probit regression                                 Number of obs   =       2675
+                                                  LR chi2(12)     =     928.61
+                                                  Prob > chi2     =     0.0000
+Log likelihood =  -208.3468                       Pseudo R2       =     0.6903
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .1938092   .0636625     3.04   0.002      .069033    .3185853
+        age2 |  -.0036332   .0009842    -3.69   0.000    -.0055621   -.0017043
+        educ |    .439042   .1816216     2.42   0.016     .0830702    .7950139
+       educ2 |  -.0259372    .009002    -2.88   0.004    -.0435808   -.0082936
+     married |   -.961727     .15117    -6.36   0.000    -1.258015   -.6654392
+       black |   .6636625   .1829426     3.63   0.000     .3051016    1.022223
+        hisp |   1.090487   .2954586     3.69   0.000      .511399    1.669575
+        re74 |  -.0536256    .018049    -2.97   0.003     -.089001   -.0182502
+        re75 |  -.0942276   .0191947    -4.91   0.000    -.1318485   -.0566066
+       re742 |   .0011853   .0003234     3.66   0.000     .0005514    .0018193
+       re752 |   .0000118   .0002702     0.04   0.965    -.0005178    .0005414
+    blacku74 |   1.231367   .2144805     5.74   0.000     .8109925    1.651741
+       _cons |  -4.421016   1.290181    -3.43   0.001    -6.949724   -1.892308
+------------------------------------------------------------------------------
+Note: 375 failures and 0 successes completely determined.
+
+
+
+Note: the common support option has been selected
+The region of common support is [.00024894, .97197349]
+
+
+
+Description of the estimated propensity score 
+in region of common support 
+
+                 Estimated propensity score
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     .0002625       .0002489
+ 5%     .0003836       .0002527
+10%     .0005937       .0002528       Obs               1,229
+25%     .0020516       .0002532       Sum of Wgt.       1,229
+
+50%     .0137536                      Mean           .1493506
+                        Largest       Std. Dev.      .2767784
+75%     .1097097       .9714612
+90%     .6154671       .9715844       Variance       .0766063
+95%     .9377143       .9718517       Skewness       2.045127
+99%     .9645695       .9719735       Kurtosis       5.820799
+
+
+
+****************************************************** 
+Step 1: Identification of the optimal number of blocks 
+Use option detail if you want more detailed output 
+****************************************************** 
+
+
+The final number of blocks is 6
+
+This number of blocks ensures that the mean propensity score
+is not different for treated and controls in each block
+
+
+
+********************************************************** 
+Step 2: Test of balancing property of the propensity score 
+Use option detail if you want more detailed output 
+********************************************************** 
+
+Variable re74 is not balanced  in block 5
+
+Variable blacku74 is not balanced  in block 5
+
+The balancing property is not satisfied 
+
+Try a different specification of the propensity score 
+
+
+******************************************* 
+End of the algorithm to estimate the pscore 
+******************************************* 
+
+. sum train if train==1 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |        185           1           0          1          1
+
+. local treatedunits_3=r(N)
+
+. sum train if train==0 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+       train |      1,044           0           0          0          0
+
+. local controlunits_3=r(N)
+
+. regress re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 ///
+> blacku74 if comsup==1, vce(robust)
+
+Linear regression                               Number of obs     =      1,229
+                                                F(13, 1215)       =     349.69
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3770
+                                                Root MSE          =     8.6888
+
+------------------------------------------------------------------------------
+             |               Robust
+        re78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -.1878338   .9132927    -0.21   0.837    -1.979639    1.603972
+         age |   .4470844   .1974617     2.26   0.024     .0596807    .8344881
+        age2 |   -.008523   .0028913    -2.95   0.003    -.0141955   -.0028504
+        educ |   -.141019   .5960115    -0.24   0.813    -1.310345    1.028307
+       educ2 |   .0231347   .0314928     0.73   0.463    -.0386515    .0849209
+     married |    1.22054   .5650166     2.16   0.031     .1120233    2.329056
+       black |  -1.254796   .5915062    -2.12   0.034    -2.415283   -.0943094
+        hisp |   1.810154   1.111432     1.63   0.104     -.370384    3.990693
+        re74 |   .3993474    .099874     4.00   0.000     .2034027    .5952921
+        re75 |   .5278171   .1090976     4.84   0.000     .3137765    .7418577
+       re742 |  -.0032185   .0012933    -2.49   0.013    -.0057558   -.0006812
+       re752 |   .0004028   .0010485     0.38   0.701    -.0016543    .0024599
+    blacku74 |   3.215291   .8928834     3.60   0.000     1.463527    4.967055
+       _cons |   -2.77072   4.263506    -0.65   0.516    -11.13537     5.59393
+------------------------------------------------------------------------------
+
+. estimates store modpscore2
+
+. esttab modpscore1 modpscore2
+
+--------------------------------------------
+                      (1)             (2)   
+                     re78            re78   
+--------------------------------------------
+train             -0.0984          -0.188   
+                  (-0.11)         (-0.21)   
+
+age                 0.438*          0.447*  
+                   (2.50)          (2.26)   
+
+age2             -0.00829***     -0.00852** 
+                  (-3.30)         (-2.95)   
+
+educ               -0.240          -0.141   
+                  (-0.43)         (-0.24)   
+
+educ2              0.0308          0.0231   
+                   (1.04)          (0.73)   
+
+married             1.255*          1.221*  
+                   (2.26)          (2.16)   
+
+black              -1.232*         -1.255*  
+                  (-2.25)         (-2.12)   
+
+hisp                1.837           1.810   
+                   (1.76)          (1.63)   
+
+re74                0.410***        0.399***
+                   (4.36)          (4.00)   
+
+re75                0.520***        0.528***
+                   (5.08)          (4.84)   
+
+re742            -0.00360**      -0.00322*  
+                  (-2.69)         (-2.49)   
+
+re752            0.000679        0.000403   
+                   (0.63)          (0.38)   
+
+blacku74            3.196***        3.215***
+                   (3.69)          (3.60)   
+
+_cons              -2.644          -2.771   
+                  (-0.68)         (-0.65)   
+--------------------------------------------
+N                    1342            1229   
+--------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. drop pscore
+
+. drop comsup
+
+. /* */
+. 
+. *point m
+. logit train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood = -506.34387  
+Iteration 2:   log likelihood = -385.59361  
+Iteration 3:   log likelihood = -250.32907  
+Iteration 4:   log likelihood =  -243.0304  
+Iteration 5:   log likelihood =  -215.0851  
+Iteration 6:   log likelihood =  -206.6627  
+Iteration 7:   log likelihood = -205.02423  
+Iteration 8:   log likelihood = -204.97911  
+Iteration 9:   log likelihood = -204.97542  
+Iteration 10:  log likelihood = -204.97536  
+Iteration 11:  log likelihood = -204.97536  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(12)       =     935.35
+                                                Prob > chi2       =     0.0000
+Log likelihood = -204.97536                     Pseudo R2         =     0.6953
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .3316903   .1203299     2.76   0.006     .0958481    .5675325
+        age2 |  -.0063668   .0018554    -3.43   0.001    -.0100033   -.0027303
+        educ |   .8492681   .3477058     2.44   0.015     .1677772    1.530759
+       educ2 |  -.0506202   .0172493    -2.93   0.003    -.0844282   -.0168122
+     married |  -1.885542   .2993308    -6.30   0.000    -2.472219   -1.298864
+       black |   1.135972   .3517854     3.23   0.001     .4464852    1.825459
+        hisp |    1.96902   .5668594     3.47   0.001     .8579959    3.080044
+        re74 |  -.1058961   .0352518    -3.00   0.003    -.1749883   -.0368039
+        re75 |  -.2168539   .0414233    -5.24   0.000     -.298042   -.1356658
+       re742 |   .0023892   .0006429     3.72   0.000     .0011291    .0036493
+       re752 |   .0001359   .0006654     0.20   0.838    -.0011682      .00144
+    blacku74 |   2.144131   .4268151     5.02   0.000     1.307588    2.980673
+       _cons |  -7.474742   2.443511    -3.06   0.002    -12.26393   -2.685549
+------------------------------------------------------------------------------
+Note: 22 failures and 0 successes completely determined.
+
+. predict pscore
+(option pr assumed; Pr(train))
+
+. 
+. gen pscoreTreat = pscore if train==1
+(2,490 missing values generated)
+
+. gen pscoreControl = pscore if train==0
+(185 missing values generated)
+
+. 
+. sum pscoreTreat
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ pscoreTreat |        185    .6874467    .3092423   .0006107   .9752541
+
+. scalar minTreat = r(min)
+
+. scalar maxTreat = r(max)
+
+. 
+. sum pscoreControl
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+pscoreCont~l |      2,490    .0232218    .0902232   3.65e-11   .9736444
+
+. scalar minControl = r(min)
+
+. scalar maxControl = r(max)
+
+. 
+. scalar min = max(minControl,minTreat)
+
+. scalar max = min(maxControl,maxTreat)
+
+. 
+. gen comsup=0
+
+. replace comsup=1 if pscore>=min & pscore<=max
+(1,336 real changes made)
+
+. 
+. sum comsup if comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      comsup |      1,336           1           0          1          1
+
+. 
+. *point n
+. sum pscore if train==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      pscore |        185    .6874467    .3092423   .0006107   .9752541
+
+. sum pscore if train==0
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      pscore |      2,490    .0232218    .0902232   3.65e-11   .9736444
+
+. 
+. sum pscore if train==1 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      pscore |        179    .6778146    .3098026   .0006107   .9724598
+
+. sum pscore if train==0 & comsup==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+      pscore |      1,157    .0498512    .1272834   .0006149   .9736444
+
+. 
+. *point o
+. set seed 4444
+
+. attnd re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 ///
+> blacku74, comsup boot reps(100) dots logit
+
+
+ The program is searching the nearest neighbor of each treated unit. 
+ This operation may take a while.
+
+
+
+ATT estimation with Nearest Neighbor Matching method 
+(random draw version)
+Analytical standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      185          57       1.668       2.114       0.789
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+nearest neighbour matches
+
+
+
+
+
+Bootstrapping of standard errors 
+
+command:     attnd re78 train age age2 educ educ2 married black hisp re74 re75 re742 re752 blacku74  
+>    , pscore() logit  comsup 
+statistic:   r(attnd)
+(obs=2675)
+....................................................................................................
+
+Bootstrap statistics
+
+Variable |   Reps   Observed       Bias   Std. Err.   [95% Conf. Interval]
+---------+-------------------------------------------------------------------
+     bs1 |    100    1.66765   .0585318   1.096292   -.5076314  3.842931  (N)
+         |                                           -.4178514  3.675981  (P)
+         |                                           -.7758095  3.628584 (BC)
+-----------------------------------------------------------------------------
+                              N = normal, P = percentile, BC = bias-corrected
+
+
+
+ATT estimation with Nearest Neighbor Matching method
+(random draw version)
+Bootstrapped standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      185          57       1.668       1.096       1.521
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+nearest neighbour matches
+
+. 
+. *point p
+. logit train age age2 educ educ2 black hisp re74 re75 re742 re752 blacku74 unem74
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood = -526.33793  
+Iteration 2:   log likelihood = -372.21209  (backed up)
+Iteration 3:   log likelihood = -260.03117  
+Iteration 4:   log likelihood =  -249.0676  
+Iteration 5:   log likelihood =  -244.6838  
+Iteration 6:   log likelihood = -231.98402  
+Iteration 7:   log likelihood = -223.93644  
+Iteration 8:   log likelihood = -223.24409  
+Iteration 9:   log likelihood = -222.62601  
+Iteration 10:  log likelihood = -222.59492  
+Iteration 11:  log likelihood = -222.59191  
+Iteration 12:  log likelihood = -222.59184  
+Iteration 13:  log likelihood = -222.59184  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(12)       =     900.12
+                                                Prob > chi2       =     0.0000
+Log likelihood = -222.59184                     Pseudo R2         =     0.6691
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .1210742   .1119637     1.08   0.280    -.0983705    .3405189
+        age2 |  -.0039662   .0017165    -2.31   0.021    -.0073304   -.0006019
+        educ |    .706905   .3341988     2.12   0.034     .0518874    1.361923
+       educ2 |  -.0430282   .0163863    -2.63   0.009    -.0751447   -.0109116
+       black |   2.224024   .4775961     4.66   0.000     1.287953    3.160096
+        hisp |   2.173813   .5568638     3.90   0.000      1.08238    3.265246
+        re74 |  -.0872106   .0398312    -2.19   0.029    -.1652782    -.009143
+        re75 |  -.2220307   .0400683    -5.54   0.000    -.3005631   -.1434983
+       re742 |   .0022485   .0007011     3.21   0.001     .0008743    .0036228
+       re752 |   .0001737   .0008864     0.20   0.845    -.0015636    .0019109
+    blacku74 |   .9369333   .6000093     1.56   0.118    -.2390633     2.11293
+      unem74 |   1.598199   .6076594     2.63   0.009     .4072088     2.78919
+       _cons |  -5.059053   2.355077    -2.15   0.032    -9.674918   -.4431867
+------------------------------------------------------------------------------
+Note: 24 failures and 0 successes completely determined.
+
+. test unem74 /* chi2=6.92 pvalue=0.0085 */
+
+ ( 1)  [train]unem74 = 0
+
+           chi2(  1) =    6.92
+         Prob > chi2 =    0.0085
+
+. 
+. logit train age age2 educ educ2 black hisp re74 re75 re742 re752 blacku74 unem75
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood = -533.99601  
+Iteration 2:   log likelihood = -404.21826  (backed up)
+Iteration 3:   log likelihood = -273.22126  
+Iteration 4:   log likelihood = -249.78501  
+Iteration 5:   log likelihood = -240.15403  
+Iteration 6:   log likelihood = -225.96511  
+Iteration 7:   log likelihood = -225.54184  
+Iteration 8:   log likelihood = -223.66379  
+Iteration 9:   log likelihood = -222.25977  
+Iteration 10:  log likelihood = -222.23667  
+Iteration 11:  log likelihood = -222.23648  
+Iteration 12:  log likelihood = -222.23648  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(12)       =     900.83
+                                                Prob > chi2       =     0.0000
+Log likelihood = -222.23648                     Pseudo R2         =     0.6696
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .2048805   .1101449     1.86   0.063    -.0109996    .4207606
+        age2 |  -.0049002   .0017069    -2.87   0.004    -.0082456   -.0015548
+        educ |   .7112886   .3276713     2.17   0.030     .0690647    1.353513
+       educ2 |  -.0429376   .0162124    -2.65   0.008    -.0747133   -.0111618
+       black |   1.266124   .3422293     3.70   0.000     .5953674    1.936882
+        hisp |   1.958512   .5103039     3.84   0.000     .9583352     2.95869
+        re74 |  -.1433085   .0345962    -4.14   0.000    -.2111158   -.0755013
+        re75 |  -.3082832   .0511903    -6.02   0.000    -.4086143   -.2079522
+       re742 |   .0028877   .0006138     4.70   0.000     .0016848    .0040906
+       re752 |   .0005202   .0005739     0.91   0.365    -.0006047    .0016451
+    blacku74 |   2.534712   .4398112     5.76   0.000     1.672698    3.396726
+      unem75 |  -1.148408   .4074649    -2.82   0.005    -1.947024   -.3497914
+       _cons |  -4.774273   2.300675    -2.08   0.038    -9.283512   -.2650333
+------------------------------------------------------------------------------
+Note: 84 failures and 0 successes completely determined.
+
+. test unem75 /*chi2=7.94; pvalue=0.0048*/
+
+ ( 1)  [train]unem75 = 0
+
+           chi2(  1) =    7.94
+         Prob > chi2 =    0.0048
+
+. 
+. logit train age age2 educ educ2 black hisp re74 re75 re742 re752 blacku74 ///
+> unem74
+
+Iteration 0:   log likelihood = -672.64954  
+Iteration 1:   log likelihood = -526.33793  
+Iteration 2:   log likelihood = -372.21209  (backed up)
+Iteration 3:   log likelihood = -260.03117  
+Iteration 4:   log likelihood =  -249.0676  
+Iteration 5:   log likelihood =  -244.6838  
+Iteration 6:   log likelihood = -231.98402  
+Iteration 7:   log likelihood = -223.93644  
+Iteration 8:   log likelihood = -223.24409  
+Iteration 9:   log likelihood = -222.62601  
+Iteration 10:  log likelihood = -222.59492  
+Iteration 11:  log likelihood = -222.59191  
+Iteration 12:  log likelihood = -222.59184  
+Iteration 13:  log likelihood = -222.59184  
+
+Logistic regression                             Number of obs     =      2,675
+                                                LR chi2(12)       =     900.12
+                                                Prob > chi2       =     0.0000
+Log likelihood = -222.59184                     Pseudo R2         =     0.6691
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .1210742   .1119637     1.08   0.280    -.0983705    .3405189
+        age2 |  -.0039662   .0017165    -2.31   0.021    -.0073304   -.0006019
+        educ |    .706905   .3341988     2.12   0.034     .0518874    1.361923
+       educ2 |  -.0430282   .0163863    -2.63   0.009    -.0751447   -.0109116
+       black |   2.224024   .4775961     4.66   0.000     1.287953    3.160096
+        hisp |   2.173813   .5568638     3.90   0.000      1.08238    3.265246
+        re74 |  -.0872106   .0398312    -2.19   0.029    -.1652782    -.009143
+        re75 |  -.2220307   .0400683    -5.54   0.000    -.3005631   -.1434983
+       re742 |   .0022485   .0007011     3.21   0.001     .0008743    .0036228
+       re752 |   .0001737   .0008864     0.20   0.845    -.0015636    .0019109
+    blacku74 |   .9369333   .6000093     1.56   0.118    -.2390633     2.11293
+      unem74 |   1.598199   .6076594     2.63   0.009     .4072088     2.78919
+       _cons |  -5.059053   2.355077    -2.15   0.032    -9.674918   -.4431867
+------------------------------------------------------------------------------
+Note: 24 failures and 0 successes completely determined.
+
+. test unem74 /*chi2=6.92; pvalue=0.0085*/
+
+ ( 1)  [train]unem74 = 0
+
+           chi2(  1) =    6.92
+         Prob > chi2 =    0.0085
+
+. 
+. *point q
+. pscore train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> pscore(pscore_BI) blockid(myblock) comsup numblo(5) level(0.005) logit
+
+
+
+**************************************************** 
+Algorithm to estimate the propensity score 
+**************************************************** 
+
+
+The treatment is train
+
+   =1 if in |
+        job |
+   training |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,490       93.08       93.08
+          1 |        185        6.92      100.00
+------------+-----------------------------------
+      Total |      2,675      100.00
+
+
+
+Estimation of the propensity score 
+
+Iteration 0:   log likelihood = -672.64954
+Iteration 1:   log likelihood = -506.34387
+Iteration 2:   log likelihood = -385.59361
+Iteration 3:   log likelihood = -253.47059
+Iteration 4:   log likelihood =  -239.0094
+Iteration 5:   log likelihood =  -216.4621
+Iteration 6:   log likelihood =  -209.4284
+Iteration 7:   log likelihood = -205.15188
+Iteration 8:   log likelihood = -204.97707
+Iteration 9:   log likelihood = -204.97538
+Iteration 10:  log likelihood = -204.97536
+
+Logistic regression                               Number of obs   =       2675
+                                                  LR chi2(12)     =     935.35
+                                                  Prob > chi2     =     0.0000
+Log likelihood = -204.97536                       Pseudo R2       =     0.6953
+
+------------------------------------------------------------------------------
+       train |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .3316903   .1203299     2.76   0.006     .0958481    .5675325
+        age2 |  -.0063668   .0018554    -3.43   0.001    -.0100033   -.0027303
+        educ |   .8492681   .3477059     2.44   0.015     .1677771    1.530759
+       educ2 |  -.0506202   .0172493    -2.93   0.003    -.0844282   -.0168122
+     married |  -1.885542   .2993309    -6.30   0.000    -2.472219   -1.298864
+       black |   1.135972   .3517854     3.23   0.001     .4464853    1.825459
+        hisp |    1.96902   .5668595     3.47   0.001     .8579958    3.080044
+        re74 |  -.1058961   .0352518    -3.00   0.003    -.1749883    -.036804
+        re75 |  -.2168539   .0414223    -5.24   0.000    -.2980401   -.1356677
+       re742 |   .0023892   .0006429     3.72   0.000     .0011291    .0036493
+       re752 |   .0001359   .0006651     0.20   0.838    -.0011676    .0014394
+    blacku74 |   2.144131    .426815     5.02   0.000     1.307589    2.980673
+       _cons |  -7.474742   2.443511    -3.06   0.002    -12.26394   -2.685549
+------------------------------------------------------------------------------
+Note: 22 failures and 0 successes completely determined.
+
+
+
+Note: the common support option has been selected
+The region of common support is [.00061066, .97525407]
+
+
+
+Description of the estimated propensity score 
+in region of common support 
+
+                 Estimated propensity score
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     .0006426       .0006107
+ 5%     .0008025       .0006149
+10%     .0010932       .0006159       Obs               1,342
+25%     .0023546        .000618       Sum of Wgt.       1,342
+
+50%     .0106667                      Mean           .1377463
+                        Largest       Std. Dev.      .2746627
+75%     .0757122        .974804
+90%     .6250822       .9749805       Variance       .0754396
+95%      .949302       .9752243       Skewness       2.185181
+99%      .970598       .9752541       Kurtosis       6.360726
+
+
+
+****************************************************** 
+Step 1: Identification of the optimal number of blocks 
+Use option detail if you want more detailed output 
+****************************************************** 
+
+
+The final number of blocks is 7
+
+This number of blocks ensures that the mean propensity score
+is not different for treated and controls in each block
+
+
+
+********************************************************** 
+Step 2: Test of balancing property of the propensity score 
+Use option detail if you want more detailed output 
+********************************************************** 
+
+
+The balancing property is satisfied 
+
+
+This table shows the inferior bound, the number of treated
+and the number of controls for each block 
+
+  Inferior |
+  of block | =1 if in job training
+of pscore  |         0          1 |     Total
+-----------+----------------------+----------
+  .0006107 |       924          7 |       931 
+       .05 |       102          4 |       106 
+        .1 |        56          7 |        63 
+        .2 |        41         28 |        69 
+        .4 |        14         21 |        35 
+        .6 |        13         20 |        33 
+        .8 |         7         98 |       105 
+-----------+----------------------+----------
+     Total |     1,157        185 |     1,342 
+
+Note: the common support option has been selected
+
+
+******************************************* 
+End of the algorithm to estimate the pscore 
+******************************************* 
+
+. 
+. 
+. teffects nnmatch (re78 pscore_BI) (train) if comsup==1, atet vce(robust)
+
+Treatment-effects estimation                   Number of obs      =      1,342
+Estimator      : nearest-neighbor matching     Matches: requested =          1
+Outcome model  : matching                                     min =          1
+Distance metric: Mahalanobis                                  max =          4
+------------------------------------------------------------------------------
+             |              AI Robust
+        re78 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       train |
+   (1 vs 0)  |    1.66765   1.210085     1.38   0.168    -.7040734    4.039373
+------------------------------------------------------------------------------
+
+. 
+. *point r
+. attr re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> comsup boot reps(100) dots logit radius(0.0001)
+
+
+ The program is searching for matches of treated units within radius. 
+ This operation may take a while.
+
+
+
+ATT estimation with the Radius Matching method
+Analytical standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+       23          66      -5.546       2.389      -2.322
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+
+
+
+
+Bootstrapping of standard errors 
+
+command:     attr re78 train age age2 educ educ2 married black hisp re74 re75 re742 re752 blacku74   
+>   , pscore() logit  comsup radius(.0001)
+statistic:   r(attr)
+(obs=2675)
+....................................................................................................
+
+Bootstrap statistics
+
+Variable |   Reps   Observed       Bias   Std. Err.   [95% Conf. Interval]
+---------+-------------------------------------------------------------------
+     bs1 |    100  -5.546139   1.445576   4.321544   -14.12102  3.028741  (N)
+         |                                           -12.64794   3.96864  (P)
+         |                                           -16.88199  1.233472 (BC)
+-----------------------------------------------------------------------------
+                              N = normal, P = percentile, BC = bias-corrected
+
+
+
+ATT estimation with the Radius Matching method
+Bootstrapped standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+       23          66      -5.546       4.322      -1.283
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+. 
+. attr re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> comsup boot reps(100) dots logit radius(0.1)
+
+
+ The program is searching for matches of treated units within radius. 
+ This operation may take a while.
+
+
+
+ATT estimation with the Radius Matching method
+Analytical standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      185        1157      -5.899       0.685      -8.610
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+
+
+
+
+Bootstrapping of standard errors 
+
+command:     attr re78 train age age2 educ educ2 married black hisp re74 re75 re742 re752 blacku74   
+>   , pscore() logit  comsup radius(.1)
+statistic:   r(attr)
+(obs=2675)
+....................................................................................................
+
+Bootstrap statistics
+
+Variable |   Reps   Observed       Bias   Std. Err.   [95% Conf. Interval]
+---------+-------------------------------------------------------------------
+     bs1 |    100  -5.899173    1.02814   1.631769   -9.136957 -2.661389  (N)
+         |                                           -7.756238 -.9740582  (P)
+         |                                           -7.954143 -4.209009 (BC)
+-----------------------------------------------------------------------------
+                              N = normal, P = percentile, BC = bias-corrected
+
+
+
+ATT estimation with the Radius Matching method
+Bootstrapped standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      185        1157      -5.899       1.632      -3.615
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+. 
+. attr re78 train age age2 educ educ2 marr black hisp re74 re75 re742 re752 blacku74, ///
+> comsup boot reps(100) dots logit radius(0.005)
+
+
+ The program is searching for matches of treated units within radius. 
+ This operation may take a while.
+
+
+
+ATT estimation with the Radius Matching method
+Analytical standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      126         925      -8.083       0.840      -9.621
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+
+
+
+
+Bootstrapping of standard errors 
+
+command:     attr re78 train age age2 educ educ2 married black hisp re74 re75 re742 re752 blacku74   
+>   , pscore() logit  comsup radius(.005)
+statistic:   r(attr)
+(obs=2675)
+....................................................................................................
+
+Bootstrap statistics
+
+Variable |   Reps   Observed       Bias   Std. Err.   [95% Conf. Interval]
+---------+-------------------------------------------------------------------
+     bs1 |    100  -8.083235   1.568133   2.406583   -12.85842 -3.308052  (N)
+         |                                           -10.02627 -1.437945  (P)
+         |                                           -10.22536  -3.83713 (BC)
+-----------------------------------------------------------------------------
+                              N = normal, P = percentile, BC = bias-corrected
+
+
+
+ATT estimation with the Radius Matching method
+Bootstrapped standard errors
+
+---------------------------------------------------------
+n. treat.   n. contr.         ATT   Std. Err.           t
+---------------------------------------------------------
+
+      126         925      -8.083       2.407      -3.359
+
+---------------------------------------------------------
+Note: the numbers of treated and controls refer to actual
+matches within radius
+
+. 
+. ***************************************************************************
+. *********************Problem 2*******************************************
+. ***************************************************************************
+. 
+. *point 1
+. clear all
+
+. set more off
+
+. cd "C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 1"
+C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 1
+
+. 
+. use jtrain3
+
+. regress unem78 train, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(1, 2673)        =      15.90
+                                                Prob > F          =     0.0001
+                                                R-squared         =     0.0098
+                                                Root MSE          =     .32779
+
+------------------------------------------------------------------------------
+             |               Robust
+      unem78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |   .1283838   .0321964     3.99   0.000     .0652514    .1915162
+       _cons |   .1148594   .0063922    17.97   0.000     .1023252    .1273936
+------------------------------------------------------------------------------
+
+. estimates store mod1
+
+. 
+. outreg2 using mymodels_2, replace tex ctitle(jtrain3 - mod1)
+mymodels_2.tex
+dir : seeout
+
+. 
+. *point 2
+. regress unem78 train age educ black hisp married re74 re75 unem75 unem74, vce(robust)
+
+Linear regression                               Number of obs     =      2,675
+                                                F(10, 2664)       =      64.36
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3141
+                                                Root MSE          =     .27327
+
+------------------------------------------------------------------------------
+             |               Robust
+      unem78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       train |  -.1993525    .045185    -4.41   0.000    -.2879538   -.1107512
+         age |   .0028579   .0006397     4.47   0.000     .0016036    .0041123
+        educ |   .0002969   .0020983     0.14   0.887    -.0038176    .0044114
+       black |  -.0179975   .0122695    -1.47   0.143    -.0420563    .0060613
+        hisp |  -.0625543   .0250947    -2.49   0.013    -.1117613   -.0133474
+     married |  -.0136721   .0173229    -0.79   0.430    -.0476399    .0202957
+        re74 |   .0008451    .001004     0.84   0.400    -.0011236    .0028138
+        re75 |  -.0042097   .0010084    -4.17   0.000     -.006187   -.0022325
+      unem75 |   .2994134   .0395227     7.58   0.000     .2219151    .3769118
+      unem74 |   .2385391   .0419072     5.69   0.000     .1563652    .3207131
+       _cons |   .0433446   .0358278     1.21   0.226    -.0269085    .1135978
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels_2, tex ctitle(jtrain3 - mod2)
+mymodels_2.tex
+dir : seeout
+
+. 
+. quietly regress unem78 train age educ black hisp married re74 ///
+> re75 unem75 unem74, vce(robust)
+
+. return list
+
+scalars:
+              r(level) =  95
+
+matrices:
+              r(table) :  9 x 11
+
+. matrix ALL=r(table)
+
+. matrix list ALL
+
+ALL[9,11]
+             train         age        educ       black        hisp     married        re74
+     b  -.19935248   .00285792   .00029689  -.01799746  -.06255433  -.01367212    .0008451
+    se   .04518503    .0006397   .00209831   .01226955   .02509465   .01732295     .001004
+     t  -4.4119143   4.4675815   .14149086  -1.4668396  -2.4927355   -.7892492   .84173394
+pvalue   .00001065   8.241e-06   .88749288   .14253774   .01273662   .43003661   .40001245
+    ll  -.28795377   .00160356   -.0038176  -.04205626   -.1117613  -.04763991   -.0011236
+    ul  -.11075119   .00411229   .00441138   .00606134  -.01334736   .02029567   .00281381
+    df        2664        2664        2664        2664        2664        2664        2664
+  crit   1.9608549   1.9608549   1.9608549   1.9608549   1.9608549   1.9608549   1.9608549
+ eform           0           0           0           0           0           0           0
+
+              re75      unem75      unem74       _cons
+     b  -.00420973   .29941341   .23853912   .04334465
+    se   .00100836   .03952274    .0419072    .0358278
+     t  -4.1748511   7.5757249   5.6920799    1.209805
+pvalue   .00003077   4.895e-14   1.392e-08   .22646109
+    ll  -.00618697   .22191505   .15636519  -.02690847
+    ul   -.0022325   .37691177   .32071306   .11359776
+    df        2664        2664        2664        2664
+  crit   1.9608549   1.9608549   1.9608549   1.9608549
+ eform           0           0           0           0
+
+. scalar lower_boundCI=ALL[5, 1]
+
+. scalar upper_boundCI=ALL[6, 1]
+
+. display lower_boundCI
+-.28795377
+
+. display upper_boundCI
+-.11075119
+
+. 
+. estimates store mod2
+
+. esttab mod1 mod2
+
+--------------------------------------------
+                      (1)             (2)   
+                   unem78          unem78   
+--------------------------------------------
+train               0.128***       -0.199***
+                   (3.99)         (-4.41)   
+
+age                               0.00286***
+                                   (4.47)   
+
+educ                             0.000297   
+                                   (0.14)   
+
+black                             -0.0180   
+                                  (-1.47)   
+
+hisp                              -0.0626*  
+                                  (-2.49)   
+
+married                           -0.0137   
+                                  (-0.79)   
+
+re74                             0.000845   
+                                   (0.84)   
+
+re75                             -0.00421***
+                                  (-4.17)   
+
+unem75                              0.299***
+                                   (7.58)   
+
+unem74                              0.239***
+                                   (5.69)   
+
+_cons               0.115***       0.0433   
+                  (17.97)          (1.21)   
+--------------------------------------------
+N                    2675            2675   
+--------------------------------------------
+t statistics in parentheses
+* p<0.05, ** p<0.01, *** p<0.001
+
+. 
+. *point 3
+. regress unem78 age educ black hisp married re74 re75 unem75 unem74 if train==1, vce(robust)
+
+Linear regression                               Number of obs     =        185
+                                                F(9, 175)         =       4.37
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0796
+                                                Root MSE          =      .4232
+
+------------------------------------------------------------------------------
+             |               Robust
+      unem78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |  -.0022981   .0048552    -0.47   0.637    -.0118803    .0072842
+        educ |   -.008484   .0146155    -0.58   0.562    -.0373294    .0203615
+       black |   .1374346   .0871457     1.58   0.117    -.0345572    .3094263
+        hisp |  -.1412636   .0914352    -1.54   0.124    -.3217213    .0391941
+     married |  -.0761776   .0774235    -0.98   0.327    -.2289817    .0766264
+        re74 |  -.0019756   .0083371    -0.24   0.813    -.0184298    .0144786
+        re75 |   -.010362   .0106267    -0.98   0.331     -.031335     .010611
+      unem75 |   .1822138   .0735987     2.48   0.014     .0369583    .3274692
+      unem74 |   -.233911   .1044695    -2.24   0.026    -.4400932   -.0277287
+       _cons |   .3735869   .2255553     1.66   0.099    -.0715718    .8187456
+------------------------------------------------------------------------------
+
+. predict y1
+(option xb assumed; fitted values)
+
+. 
+. regress unem78 age educ black hisp married re74 re75 unem75 unem74 if train==0, vce(robust)
+
+Linear regression                               Number of obs     =      2,490
+                                                F(9, 2480)        =      91.59
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3953
+                                                Root MSE          =     .24844
+
+------------------------------------------------------------------------------
+             |               Robust
+      unem78 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   .0021732   .0006035     3.60   0.000     .0009898    .0033566
+        educ |  -.0014064   .0019856    -0.71   0.479       -.0053    .0024872
+       black |  -.0173876   .0119535    -1.45   0.146    -.0408275    .0060522
+        hisp |  -.0517355   .0247458    -2.09   0.037      -.10026   -.0032109
+     married |  -.0149914   .0168272    -0.89   0.373    -.0479882    .0180054
+        re74 |   .0014736   .0010112     1.46   0.145    -.0005093    .0034564
+        re75 |  -.0035097   .0010114    -3.47   0.001    -.0054929   -.0015265
+      unem75 |   .3435381   .0450072     7.63   0.000     .2552825    .4317937
+      unem74 |   .3363692   .0459428     7.32   0.000     .2462789    .4264595
+       _cons |   .0500675   .0342102     1.46   0.143     -.017016     .117151
+------------------------------------------------------------------------------
+
+. predict y0
+(option xb assumed; fitted values)
+
+. 
+. gen ATEx=y1-y0
+
+. 
+. sum ATEx
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        ATEx |      2,675   -.2031515    .2448774    -1.5703   .3241221
+
+. return list
+
+scalars:
+                  r(N) =  2675
+              r(sum_w) =  2675
+               r(mean) =  -.2031514621847179
+                r(Var) =  .0599649442141572
+                 r(sd) =  .2448774064999815
+                r(min) =  -1.570299506187439
+                r(max) =  .3241221308708191
+                r(sum) =  -543.4301613441203
+
+. display r(mean)
+-.20315146
+
+. scalar define ATE_train=r(mean)
+
+. display ATE_train
+-.20315146
+
+. 
+. sum ATEx if train==1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        ATEx |        185   -.2698234     .309953  -.7017545   .3241221
+
+. return list
+
+scalars:
+                  r(N) =  185
+              r(sum_w) =  185
+               r(mean) =  -.2698234354019971
+                r(Var) =  .0960708827718241
+                 r(sd) =  .3099530331708726
+                r(min) =  -.7017544507980347
+                r(max) =  .3241221308708191
+                r(sum) =  -49.91733554936945
+
+. scalar define ATT=r(mean)
+
+. display ATT
+-.26982344
+
+. 
+. capture log close

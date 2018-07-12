@@ -1,0 +1,714 @@
+----------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assig
+> nment 2\assignment2.log
+  log type:  text
+ opened on:  10 Apr 2017, 23:18:06
+
+. 
+. ***************************************************************************
+. ******************** Questions 1-2 *******************************************
+. ***************************************************************************
+. 
+. /*Please look at the attached pdf*/
+. ***************************************************************************
+. ******************** Question 3 *******************************************
+. ***************************************************************************
+. 
+. /*point a*/
+. use datarest
+
+. generate birthqtr_=birthqtr-1
+
+. 
+. 
+. generate birthdate=birthyear+(birthqtr_/4)
+
+. 
+. 
+. quietly tab higraded, nolabel
+
+. quietly tab higraded
+
+. 
+. gen edyrs=0
+
+. forvalues i=4(1)8 {
+  2. replace edyrs=`i'-3 if higraded==10*`i' | higraded==(10*`i')+1
+  3. }
+(2,171 real changes made)
+(4,809 real changes made)
+(7,440 real changes made)
+(8,911 real changes made)
+(12,469 real changes made)
+
+. 
+. 
+. forvalues i=9(1)22 {
+  2. replace edyrs=`i'-3 if higraded==10*`i' | higraded ==(10*`i')+1 ///
+> | higraded==(10*`i')+2
+  3. }
+(25,878 real changes made)
+(29,679 real changes made)
+(72,393 real changes made)
+(78,160 real changes made)
+(97,862 real changes made)
+(99,059 real changes made)
+(826,948 real changes made)
+(174,293 real changes made)
+(215,538 real changes made)
+(107,199 real changes made)
+(245,853 real changes made)
+(73,929 real changes made)
+(62,423 real changes made)
+(42,035 real changes made)
+
+. 
+. replace edyrs=20 if higraded==230
+(52,726 real changes made)
+
+. 
+. save datarest_, replace
+file datarest_.dta saved
+
+. 
+. collapse (mean) edyrs, by (birthdate birthqtr_ )
+
+. gen birthqtr=birthqtr+1
+
+. 
+. twoway scatter edyrs birthdate if birthdate<=1939.75, mlabel(birthqtr) ///
+> mlabcolor(black) msymbol(square) mlabposition(6) mcolor(black) connect(l) ///
+> lcolor(black) msize(small) lwidth(medium)
+
+. graph export figure1.png, replace
+(file figure1.png written in PNG format)
+
+. 
+. twoway scatter edyrs birthdate if birthdate>1939.75 & birthdate<=1949.75, ///
+> mlabel(birthqtr) mlabcolor(black) msymbol(square) mlabposition(6) ///
+> mcolor(black) connect(l) lcolor(black) msize(small) lwidth(medium)
+
+. graph export figure2.png, replace
+(file figure2.png written in PNG format)
+
+. 
+. twoway scatter edyrs birthdate if birthdate>1949.75 & birthdate<=1959.75, ///
+> mlabel(birthqtr) mlabcolor(black) msymbol(square) mlabposition(6) ///
+> mcolor(black) connect(l) lcolor(black) msize(small) lwidth(medium)
+
+. graph export figure3.png, replace
+(file figure3.png written in PNG format)
+
+. 
+. /*point b*/
+. /*Please look at the attached pdf*/
+. 
+. ***************************************************************************
+. ******************** Question 4 *******************************************
+. ***************************************************************************
+. clear all
+
+. use datarest_
+
+. 
+. /*We generate the dependent variable*/
+. quietly tab disabwrk
+
+. quietly tab disabwrk, nolabel
+
+. quietly tab disabtrn
+
+. quietly tab disabtrn, nolabel
+
+. 
+. gen disab=0
+
+. replace disab=1 if disabwrk==2 | disabwrk==3 | disabtrn==2
+(154,793 real changes made)
+
+. 
+. /*We generate covariates*/
+. generate SMSA=0
+
+. replace SMSA=1 if metro==2
+(452,208 real changes made)
+
+. 
+. gen married=0
+
+. replace married=1 if marst==1
+(1,417,418 real changes made)
+
+. 
+. egen region_=group(region)
+
+. 
+. /*We restrict the sample*/
+. drop if birthyear>=1940
+(1,716,806 observations deleted)
+
+. drop if bpl>=90
+(38,672 observations deleted)
+
+. 
+. misstable summarize disabwrk disabtrn edyrs
+(variables nonmissing or string)
+
+. save datarest_restricted, replace
+file datarest_restricted.dta saved
+
+. 
+. /*point a*/
+. regress disab edyrs, robust
+
+Linear regression                               Number of obs     =    496,790
+                                                F(1, 496788)      =   12467.87
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0319
+                                                Root MSE          =     .29842
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0155154    .000139  -111.66   0.000    -.0157878   -.0152431
+       _cons |   .2955661   .0019264   153.43   0.000     .2917903    .2993418
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, replace tex ///
+> title("Table 1 - Model specifications") ctitle(OLS) ///
+> addtext(Regional dummies, Not included, Year dummies, Not included, State of birth dummies, 
+> Not included) ///
+> addnote("The dependent variable is the health dummy disab")
+mymodels.tex
+dir : seeout
+
+. 
+. regress disab edyrs SMSA married birthdate  ib(9).region_, baselevels robust
+
+Linear regression                               Number of obs     =    496,790
+                                                F(12, 496777)     =    1490.92
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0499
+                                                Root MSE          =     .29563
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0142682   .0001366  -104.46   0.000    -.0145359   -.0140005
+        SMSA |   .0046808   .0012177     3.84   0.000      .002294    .0070675
+     married |  -.0960668   .0013391   -71.74   0.000    -.0986914   -.0934422
+   birthdate |  -.0047122   .0001446   -32.58   0.000    -.0049956   -.0044288
+             |
+     region_ |
+          1  |  -.0089874    .002089    -4.30   0.000    -.0130818   -.0048931
+          2  |  -.0190829    .001531   -12.46   0.000    -.0220836   -.0160822
+          3  |  -.0134194   .0015043    -8.92   0.000    -.0163678    -.010471
+          4  |  -.0110049   .0018584    -5.92   0.000    -.0146473   -.0073624
+          5  |   .0022213   .0015973     1.39   0.164    -.0009093    .0053519
+          6  |   .0177977   .0021682     8.21   0.000     .0135482    .0220473
+          7  |   -.000109    .001772    -0.06   0.951    -.0035822    .0033641
+          8  |   .0015901   .0021949     0.72   0.469    -.0027118     .005892
+          9  |          0  (base)
+             |
+       _cons |    9.48062   .2798426    33.88   0.000     8.932137     10.0291
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(OLS) keep(edyrs SMSA married birthdate) ///
+> addtext (Regional dummies, Included, Year dummies, Not included, State of birth dummies, Not
+>  included)
+mymodels.tex
+dir : seeout
+
+. 
+. egen birthyear_=group(birthyear)
+
+. 
+. regress disab edyrs SMSA married birthdate ib(9).region_ ib(10).birthyear_, baselevels robus
+> t
+
+Linear regression                               Number of obs     =    496,790
+                                                F(21, 496768)     =     852.76
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0500
+                                                Root MSE          =     .29562
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |   -.014266   .0001366  -104.45   0.000    -.0145337   -.0139983
+        SMSA |   .0046683   .0012177     3.83   0.000     .0022815     .007055
+     married |  -.0960469   .0013391   -71.72   0.000    -.0986716   -.0934223
+   birthdate |  -.0072337    .001508    -4.80   0.000    -.0101894    -.004278
+             |
+     region_ |
+          1  |  -.0089779   .0020889    -4.30   0.000    -.0130721   -.0048837
+          2  |  -.0190901    .001531   -12.47   0.000    -.0220909   -.0160894
+          3  |   -.013409   .0015043    -8.91   0.000    -.0163574   -.0104606
+          4  |  -.0110214   .0018585    -5.93   0.000    -.0146639   -.0073788
+          5  |   .0022274   .0015972     1.39   0.163    -.0009031    .0053578
+          6  |   .0178028   .0021681     8.21   0.000     .0135535    .0220522
+          7  |  -.0000867   .0017721    -0.05   0.961      -.00356    .0033866
+          8  |   .0015676   .0021949     0.71   0.475    -.0027343    .0058696
+          9  |          0  (base)
+             |
+  birthyear_ |
+          1  |  -.0252381   .0136875    -1.84   0.065    -.0520653     .001589
+          2  |  -.0234323   .0122006    -1.92   0.055    -.0473452    .0004805
+          3  |  -.0210187   .0106982    -1.96   0.049    -.0419869   -.0000505
+          4  |  -.0155322   .0092183    -1.68   0.092    -.0335998    .0025355
+          5  |  -.0171678   .0077277    -2.22   0.026    -.0323138   -.0020217
+          6  |  -.0157758   .0062715    -2.52   0.012    -.0280678   -.0034838
+          7  |  -.0130404   .0048312    -2.70   0.007    -.0225094   -.0035715
+          8  |  -.0119303    .003436    -3.47   0.001    -.0186647   -.0051958
+          9  |  -.0039738   .0022396    -1.77   0.076    -.0083634    .0004158
+         10  |          0  (base)
+             |
+       _cons |   14.37407   2.924648     4.91   0.000     8.641854    20.10629
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex ctitle(OLS) keep(edyrs SMSA married birthdate) ///
+> addtext (Regional dummies, Included, Year dummies, Included, State of birth dummies, Not inc
+> luded)
+mymodels.tex
+dir : seeout
+
+. 
+. /*point b*/
+. /*Please look at the attached pdf*/
+. 
+. /*point c*/
+. egen birthqtr__=group(birthqtr_)
+
+. 
+. ivregress 2sls disab (edyrs=ib(4).birthqtr__), baselevels vce(robust)
+
+Instrumental variables (2SLS) regression          Number of obs   =    496,790
+                                                  Wald chi2(1)    =      51.02
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =          .
+                                                  Root MSE        =     .31906
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0478365   .0066969    -7.14   0.000    -.0609622   -.0347108
+       _cons |   .6977659   .0833462     8.37   0.000     .5344104    .8611214
+------------------------------------------------------------------------------
+Instrumented:  edyrs
+Instruments:   1.birthqtr__ 2.birthqtr__ 3.birthqtr__
+
+. quietly estat firststage
+
+. return list
+
+matrices:
+      r(singleresults) :  1 x 8
+
+. matrix A=r(singleresults)
+
+. matrix list A
+
+A[1,8]
+           c1         c2         c3         c4         c5         c6         c7         c8
+r1  .00037478  .00036875  .00037478  62.164736          3     496786  3.551e-40          .
+
+. scalar F1=A[1,4]
+
+. global F1=F1
+
+. 
+. 
+. outreg2 using mymodels, tex ctitle(TSLS) addstat(First-stage F-statistic, $F1) ///
+> addtext(Regional dummies, Not included, Year dummies, Not included, State of birth dummies, 
+> Not included, Instruments, Birth quarters)
+mymodels.tex
+dir : seeout
+
+. 
+. ivregress 2sls disab SMSA married ib(9).region_ ib(10).birthyear_ (edyrs=ib(4).birthqtr__), 
+> baselevels vce(robust)
+
+Instrumental variables (2SLS) regression          Number of obs   =    496,790
+                                                  Wald chi2(20)   =    8512.15
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =          .
+                                                  Root MSE        =     .31475
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0458092   .0067941    -6.74   0.000    -.0591254    -.032493
+        SMSA |   .0083846    .001516     5.53   0.000     .0054132     .011356
+     married |  -.0717012   .0054259   -13.21   0.000    -.0823359   -.0610666
+             |
+     region_ |
+          1  |  -.0231807   .0037904    -6.12   0.000    -.0306097   -.0157516
+          2  |  -.0406711   .0049295    -8.25   0.000    -.0503328   -.0310094
+          3  |  -.0493207    .007894    -6.25   0.000    -.0647927   -.0338487
+          4  |  -.0418865   .0069214    -6.05   0.000    -.0554522   -.0283208
+          5  |  -.0447505   .0102502    -4.37   0.000    -.0648404   -.0246606
+          6  |  -.0529449   .0154064    -3.44   0.001     -.083141   -.0227488
+          7  |  -.0417397   .0091454    -4.56   0.000    -.0596644   -.0238151
+          8  |  -.0107241   .0035327    -3.04   0.002    -.0176481   -.0038001
+          9  |          0  (base)
+             |
+  birthyear_ |
+          1  |      .0183   .0050348     3.63   0.000      .008432    .0281679
+          2  |   .0168556   .0042763     3.94   0.000     .0084743     .025237
+          3  |   .0135738   .0039643     3.42   0.001      .005804    .0213436
+          4  |    .013982   .0035672     3.92   0.000     .0069905    .0209736
+          5  |   .0068766   .0032222     2.13   0.033     .0005613    .0131919
+          6  |   .0038684   .0027356     1.41   0.157    -.0014934    .0092301
+          7  |   .0013671   .0024224     0.56   0.573    -.0033807     .006115
+          8  |  -.0017693   .0020245    -0.87   0.382    -.0057372    .0021986
+          9  |   .0019271   .0018131     1.06   0.288    -.0016265    .0054808
+         10  |          0  (base)
+             |
+       _cons |   .7587411   .0890892     8.52   0.000     .5841294    .9333527
+------------------------------------------------------------------------------
+Instrumented:  edyrs
+Instruments:   SMSA married 1.region_ 2.region_ 3.region_ 4.region_
+               5.region_ 6.region_ 7.region_ 8.region_ 1.birthyear_
+               2.birthyear_ 3.birthyear_ 4.birthyear_ 5.birthyear_
+               6.birthyear_ 7.birthyear_ 8.birthyear_ 9.birthyear_
+               1.birthqtr__ 2.birthqtr__ 3.birthqtr__
+
+. quietly estat firststage
+
+. return list
+
+matrices:
+      r(singleresults) :  1 x 8
+
+. matrix B=r(singleresults)
+
+. matrix list B
+
+B[1,8]
+           c1         c2         c3         c4         c5         c6         c7         c8
+r1  .03830992  .03826733  .00036809  61.045971          3     496767  1.884e-39          .
+
+. scalar F2=B[1,4]
+
+. global F2=F2
+
+. outreg2 using mymodels, tex ctitle(TSLS) keep(edyrs SMSA married) ///
+> addstat(First-stage F-statistic, $F2) ///
+> addtext(Regional dummies, Included, Year dummies, Included, State of birth dummies, Not incl
+> uded, Instruments, Birth quarters)
+mymodels.tex
+dir : seeout
+
+. 
+. 
+. ivregress 2sls disab SMSA married ib(9).region_ i.birthyear_ (edyrs=birthqtr__#birthyear_), 
+> baselevels vce(robust)
+
+Instrumental variables (2SLS) regression          Number of obs   =    496,790
+                                                  Wald chi2(20)   =    8675.02
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =          .
+                                                  Root MSE        =     .31054
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0420271    .005946    -7.07   0.000     -.053681   -.0303733
+        SMSA |   .0079395   .0014525     5.47   0.000     .0050926    .0107865
+     married |  -.0746218   .0047892   -15.58   0.000    -.0840085   -.0652351
+             |
+     region_ |
+          1  |   -.021474   .0034677    -6.19   0.000    -.0282706   -.0146775
+          2  |  -.0380803   .0043763    -8.70   0.000    -.0466578   -.0295028
+          3  |  -.0450126   .0069479    -6.48   0.000    -.0586302    -.031395
+          4  |  -.0381859   .0061241    -6.24   0.000     -.050189   -.0261828
+          5  |  -.0391181   .0090031    -4.34   0.000    -.0567638   -.0214724
+          6  |  -.0444591   .0135172    -3.29   0.001    -.0709523   -.0179659
+          7  |   -.036753   .0080488    -4.57   0.000    -.0525283   -.0209777
+          8  |  -.0092509   .0032684    -2.83   0.005    -.0156567    -.002845
+          9  |          0  (base)
+             |
+  birthyear_ |
+          1  |          0  (base)
+          2  |  -.0019234   .0022634    -0.85   0.395    -.0063597    .0025128
+          3  |  -.0053888   .0023458    -2.30   0.022    -.0099865   -.0007911
+          4  |  -.0052407   .0025555    -2.05   0.040    -.0102495    -.000232
+          5  |  -.0125636   .0027278    -4.61   0.000      -.01791   -.0072171
+          6  |  -.0159085   .0030719    -5.18   0.000    -.0219294   -.0098877
+          7  |  -.0186463   .0033542    -5.56   0.000    -.0252204   -.0120723
+          8  |  -.0221469   .0038082    -5.82   0.000    -.0296108    -.014683
+          9  |  -.0188022   .0042769    -4.40   0.000    -.0271847   -.0104197
+         10  |  -.0208943   .0044906    -4.65   0.000    -.0296956    -.012093
+             |
+       _cons |   .7300467   .0739316     9.87   0.000     .5851435      .87495
+------------------------------------------------------------------------------
+Instrumented:  edyrs
+Instruments:   SMSA married 1.region_ 2.region_ 3.region_ 4.region_
+               5.region_ 6.region_ 7.region_ 8.region_ 2.birthyear_
+               3.birthyear_ 4.birthyear_ 5.birthyear_ 6.birthyear_
+               7.birthyear_ 8.birthyear_ 9.birthyear_ 10.birthyear_
+               2.birthqtr__#1b.birthyear_ 2.birthqtr__#2.birthyear_
+               2.birthqtr__#3.birthyear_ 2.birthqtr__#4.birthyear_
+               2.birthqtr__#5.birthyear_ 2.birthqtr__#6.birthyear_
+               2.birthqtr__#7.birthyear_ 2.birthqtr__#8.birthyear_
+               2.birthqtr__#9.birthyear_ 2.birthqtr__#10.birthyear_
+               3.birthqtr__#1b.birthyear_ 3.birthqtr__#2.birthyear_
+               3.birthqtr__#3.birthyear_ 3.birthqtr__#4.birthyear_
+               3.birthqtr__#5.birthyear_ 3.birthqtr__#6.birthyear_
+               3.birthqtr__#7.birthyear_ 3.birthqtr__#8.birthyear_
+               3.birthqtr__#9.birthyear_ 3.birthqtr__#10.birthyear_
+               4.birthqtr__#1b.birthyear_ 4.birthqtr__#2.birthyear_
+               4.birthqtr__#3.birthyear_ 4.birthqtr__#4.birthyear_
+               4.birthqtr__#5.birthyear_ 4.birthqtr__#6.birthyear_
+               4.birthqtr__#7.birthyear_ 4.birthqtr__#8.birthyear_
+               4.birthqtr__#9.birthyear_ 4.birthqtr__#10.birthyear_
+
+. quietly estat firststage
+
+. return list
+
+matrices:
+      r(singleresults) :  1 x 8
+
+. matrix C=r(singleresults)
+
+. matrix list C
+
+C[1,8]
+           c1         c2         c3         c4         c5         c6         c7         c8
+r1  .03842458  .03832973  .00048727  7.9607721         30     496740  2.197e-34          .
+
+. scalar F3=C[1,4]
+
+. global F3=F3
+
+. outreg2 using mymodels, tex ctitle(TSLS) keep(edyrs SMSA married) ///
+> addstat(First-stage F-statistic, $F3) ///
+> addtext(Regional dummies, Included, Year dummies, Included, State of birth dummies, Not incl
+> uded, Instruments, Birth quarter * Birth year)
+mymodels.tex
+dir : seeout
+
+. 
+. egen bpl_=group(bpl)
+
+. 
+. 
+. ivregress 2sls disab SMSA married ib(51).bpl_ ib(9).region_ i.birthyear_ (edyrs=birthqtr__#i
+> b(51).bpl_), baselevels vce(robust)
+
+Instrumental variables (2SLS) regression          Number of obs   =    496,790
+                                                  Wald chi2(70)   =   10054.52
+                                                  Prob > chi2     =     0.0000
+                                                  R-squared       =     0.0275
+                                                  Root MSE        =      .2991
+
+------------------------------------------------------------------------------
+             |               Robust
+       disab |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       edyrs |  -.0279809   .0040661    -6.88   0.000    -.0359502   -.0200115
+        SMSA |    .007849   .0015724     4.99   0.000     .0047672    .0109308
+     married |  -.0860619   .0032839   -26.21   0.000    -.0924982   -.0796257
+             |
+        bpl_ |
+          1  |  -.0203066   .0115155    -1.76   0.078    -.0428766    .0022634
+          2  |  -.0457874   .0232012    -1.97   0.048    -.0912609   -.0003139
+          3  |  -.0287621   .0119791    -2.40   0.016    -.0522406   -.0052835
+          4  |  -.0012611   .0118696    -0.11   0.915     -.024525    .0220029
+          5  |  -.0135633   .0093951    -1.44   0.149    -.0319773    .0048507
+          6  |  -.0101666    .010258    -0.99   0.322    -.0302719    .0099387
+          7  |  -.0146465   .0100175    -1.46   0.144    -.0342805    .0049874
+          8  |  -.0188576   .0146182    -1.29   0.197    -.0475088    .0097937
+          9  |    .000331   .0115946     0.03   0.977     -.022394    .0230559
+         10  |  -.0019476   .0108128    -0.18   0.857    -.0231404    .0192452
+         11  |  -.0240199   .0128636    -1.87   0.062     -.049232    .0011922
+         12  |  -.0111936   .0177929    -0.63   0.529    -.0460671    .0236798
+         13  |  -.0032468   .0108055    -0.30   0.764    -.0244252    .0179315
+         14  |  -.0015272   .0094787    -0.16   0.872    -.0201051    .0170507
+         15  |    -.00769   .0095146    -0.81   0.419    -.0263382    .0109582
+         16  |  -.0118795   .0095732    -1.24   0.215    -.0306426    .0068836
+         17  |   .0016114   .0097913     0.16   0.869    -.0175792    .0208019
+         18  |   -.006534   .0125517    -0.52   0.603    -.0311348    .0180668
+         19  |  -.0208581   .0120097    -1.74   0.082    -.0443968    .0026805
+         20  |  -.0132918   .0113755    -1.17   0.243    -.0355873    .0090037
+         21  |  -.0268249   .0108987    -2.46   0.014     -.048186   -.0054638
+         22  |  -.0011599   .0096559    -0.12   0.904     -.020085    .0177652
+         23  |   .0067523   .0094284     0.72   0.474    -.0117271    .0252317
+         24  |  -.0105985   .0095912    -1.11   0.269    -.0293968    .0081998
+         25  |  -.0219771   .0123166    -1.78   0.074    -.0461172    .0021629
+         26  |  -.0020519   .0096981    -0.21   0.832    -.0210599     .016956
+         27  |  -.0128174   .0110253    -1.16   0.245    -.0344266    .0087917
+         28  |   .0013288   .0099758     0.13   0.894    -.0182233     .020881
+         29  |  -.0007919   .0168555    -0.05   0.963    -.0338281    .0322444
+         30  |  -.0109042   .0121244    -0.90   0.368    -.0346677    .0128592
+         31  |   -.002869   .0097429    -0.29   0.768    -.0219648    .0162267
+         32  |  -.0392474   .0126634    -3.10   0.002    -.0640671   -.0144277
+         33  |   .0116387     .00978     1.19   0.234    -.0075296    .0308071
+         34  |  -.0337869   .0122641    -2.75   0.006     -.057824   -.0097497
+         35  |  -.0169307   .0106029    -1.60   0.110     -.037712    .0038507
+         36  |   .0029233   .0093686     0.31   0.755    -.0154388    .0212853
+         37  |   .0040407   .0099852     0.40   0.686    -.0155299    .0236113
+         38  |   .0107993   .0106556     1.01   0.311    -.0100853    .0316839
+         39  |  -.0034778   .0093349    -0.37   0.709    -.0217739    .0148183
+         40  |  -.0053053   .0112207    -0.47   0.636    -.0272975    .0166869
+         41  |  -.0329864   .0135343    -2.44   0.015    -.0595132   -.0064596
+         42  |  -.0180917   .0105259    -1.72   0.086     -.038722    .0025385
+         43  |  -.0265472   .0119327    -2.22   0.026    -.0499349   -.0031595
+         44  |  -.0291402   .0107952    -2.70   0.007    -.0502984    -.007982
+         45  |   .0082685   .0107012     0.77   0.440    -.0127054    .0292424
+         46  |   .0098128   .0132569     0.74   0.459    -.0161702    .0357958
+         47  |  -.0338283    .012899    -2.62   0.009    -.0591099   -.0085467
+         48  |  -.0080014   .0099573    -0.80   0.422    -.0275174    .0115145
+         49  |  -.0003306   .0116881    -0.03   0.977    -.0232387    .0225776
+         50  |  -.0118634   .0095039    -1.25   0.212    -.0304907    .0067639
+         51  |          0  (base)
+             |
+     region_ |
+          1  |  -.0182228   .0039249    -4.64   0.000    -.0259155   -.0105302
+          2  |  -.0371264   .0051241    -7.25   0.000    -.0471695   -.0270834
+          3  |  -.0336698   .0054953    -6.13   0.000    -.0444404   -.0228992
+          4  |  -.0256628   .0050067    -5.13   0.000    -.0354757   -.0158499
+          5  |  -.0080014   .0028871    -2.77   0.006    -.0136599   -.0023428
+          6  |  -.0035932   .0047903    -0.75   0.453    -.0129819    .0057955
+          7  |   -.009633   .0030192    -3.19   0.001    -.0155504   -.0037156
+          8  |  -.0032109    .002799    -1.15   0.251    -.0086967     .002275
+          9  |          0  (base)
+             |
+  birthyear_ |
+          1  |          0  (base)
+          2  |  -.0035793   .0021367    -1.68   0.094    -.0077671    .0006085
+          3  |   -.007482    .002201    -3.40   0.001    -.0117959   -.0031682
+          4  |  -.0082429   .0023246    -3.55   0.000    -.0127991   -.0036868
+          5  |  -.0163009   .0024315    -6.70   0.000    -.0210664   -.0115353
+          6  |   -.020998   .0026059    -8.06   0.000    -.0261055   -.0158906
+          7  |  -.0245822   .0027519    -8.93   0.000    -.0299759   -.0191885
+          8  |  -.0294591    .002991    -9.85   0.000    -.0353215   -.0235968
+          9  |  -.0275119   .0032765    -8.40   0.000    -.0339338   -.0210899
+         10  |  -.0301423   .0034062    -8.85   0.000    -.0368184   -.0234662
+             |
+       _cons |    .563504   .0525246    10.73   0.000     .4605577    .6664503
+------------------------------------------------------------------------------
+Instrumented:  edyrs
+Instruments:   SMSA married 1.bpl_ 2.bpl_ 3.bpl_ 4.bpl_ 5.bpl_ 6.bpl_ 7.bpl_
+               8.bpl_ 9.bpl_ 10.bpl_ 11.bpl_ 12.bpl_ 13.bpl_ 14.bpl_ 15.bpl_
+               16.bpl_ 17.bpl_ 18.bpl_ 19.bpl_ 20.bpl_ 21.bpl_ 22.bpl_
+               23.bpl_ 24.bpl_ 25.bpl_ 26.bpl_ 27.bpl_ 28.bpl_ 29.bpl_
+               30.bpl_ 31.bpl_ 32.bpl_ 33.bpl_ 34.bpl_ 35.bpl_ 36.bpl_
+               37.bpl_ 38.bpl_ 39.bpl_ 40.bpl_ 41.bpl_ 42.bpl_ 43.bpl_
+               44.bpl_ 45.bpl_ 46.bpl_ 47.bpl_ 48.bpl_ 49.bpl_ 50.bpl_
+               1.region_ 2.region_ 3.region_ 4.region_ 5.region_ 6.region_
+               7.region_ 8.region_ 2.birthyear_ 3.birthyear_ 4.birthyear_
+               5.birthyear_ 6.birthyear_ 7.birthyear_ 8.birthyear_
+               9.birthyear_ 10.birthyear_ 2.birthqtr__#1.bpl_
+               2.birthqtr__#2.bpl_ 2.birthqtr__#3.bpl_ 2.birthqtr__#4.bpl_
+               2.birthqtr__#5.bpl_ 2.birthqtr__#6.bpl_ 2.birthqtr__#7.bpl_
+               2.birthqtr__#8.bpl_ 2.birthqtr__#9.bpl_ 2.birthqtr__#10.bpl_
+               2.birthqtr__#11.bpl_ 2.birthqtr__#12.bpl_
+               2.birthqtr__#13.bpl_ 2.birthqtr__#14.bpl_
+               2.birthqtr__#15.bpl_ 2.birthqtr__#16.bpl_
+               2.birthqtr__#17.bpl_ 2.birthqtr__#18.bpl_
+               2.birthqtr__#19.bpl_ 2.birthqtr__#20.bpl_
+               2.birthqtr__#21.bpl_ 2.birthqtr__#22.bpl_
+               2.birthqtr__#23.bpl_ 2.birthqtr__#24.bpl_
+               2.birthqtr__#25.bpl_ 2.birthqtr__#26.bpl_
+               2.birthqtr__#27.bpl_ 2.birthqtr__#28.bpl_
+               2.birthqtr__#29.bpl_ 2.birthqtr__#30.bpl_
+               2.birthqtr__#31.bpl_ 2.birthqtr__#32.bpl_
+               2.birthqtr__#33.bpl_ 2.birthqtr__#34.bpl_
+               2.birthqtr__#35.bpl_ 2.birthqtr__#36.bpl_
+               2.birthqtr__#37.bpl_ 2.birthqtr__#38.bpl_
+               2.birthqtr__#39.bpl_ 2.birthqtr__#40.bpl_
+               2.birthqtr__#41.bpl_ 2.birthqtr__#42.bpl_
+               2.birthqtr__#43.bpl_ 2.birthqtr__#44.bpl_
+               2.birthqtr__#45.bpl_ 2.birthqtr__#46.bpl_
+               2.birthqtr__#47.bpl_ 2.birthqtr__#48.bpl_
+               2.birthqtr__#49.bpl_ 2.birthqtr__#50.bpl_
+               2.birthqtr__#51b.bpl_ 3.birthqtr__#1.bpl_ 3.birthqtr__#2.bpl_
+               3.birthqtr__#3.bpl_ 3.birthqtr__#4.bpl_ 3.birthqtr__#5.bpl_
+               3.birthqtr__#6.bpl_ 3.birthqtr__#7.bpl_ 3.birthqtr__#8.bpl_
+               3.birthqtr__#9.bpl_ 3.birthqtr__#10.bpl_ 3.birthqtr__#11.bpl_
+               3.birthqtr__#12.bpl_ 3.birthqtr__#13.bpl_
+               3.birthqtr__#14.bpl_ 3.birthqtr__#15.bpl_
+               3.birthqtr__#16.bpl_ 3.birthqtr__#17.bpl_
+               3.birthqtr__#18.bpl_ 3.birthqtr__#19.bpl_
+               3.birthqtr__#20.bpl_ 3.birthqtr__#21.bpl_
+               3.birthqtr__#22.bpl_ 3.birthqtr__#23.bpl_
+               3.birthqtr__#24.bpl_ 3.birthqtr__#25.bpl_
+               3.birthqtr__#26.bpl_ 3.birthqtr__#27.bpl_
+               3.birthqtr__#28.bpl_ 3.birthqtr__#29.bpl_
+               3.birthqtr__#30.bpl_ 3.birthqtr__#31.bpl_
+               3.birthqtr__#32.bpl_ 3.birthqtr__#33.bpl_
+               3.birthqtr__#34.bpl_ 3.birthqtr__#35.bpl_
+               3.birthqtr__#36.bpl_ 3.birthqtr__#37.bpl_
+               3.birthqtr__#38.bpl_ 3.birthqtr__#39.bpl_
+               3.birthqtr__#40.bpl_ 3.birthqtr__#41.bpl_
+               3.birthqtr__#42.bpl_ 3.birthqtr__#43.bpl_
+               3.birthqtr__#44.bpl_ 3.birthqtr__#45.bpl_
+               3.birthqtr__#46.bpl_ 3.birthqtr__#47.bpl_
+               3.birthqtr__#48.bpl_ 3.birthqtr__#49.bpl_
+               3.birthqtr__#50.bpl_ 3.birthqtr__#51b.bpl_
+               4.birthqtr__#1.bpl_ 4.birthqtr__#2.bpl_ 4.birthqtr__#3.bpl_
+               4.birthqtr__#4.bpl_ 4.birthqtr__#5.bpl_ 4.birthqtr__#6.bpl_
+               4.birthqtr__#7.bpl_ 4.birthqtr__#8.bpl_ 4.birthqtr__#9.bpl_
+               4.birthqtr__#10.bpl_ 4.birthqtr__#11.bpl_
+               4.birthqtr__#12.bpl_ 4.birthqtr__#13.bpl_
+               4.birthqtr__#14.bpl_ 4.birthqtr__#15.bpl_
+               4.birthqtr__#16.bpl_ 4.birthqtr__#17.bpl_
+               4.birthqtr__#18.bpl_ 4.birthqtr__#19.bpl_
+               4.birthqtr__#20.bpl_ 4.birthqtr__#21.bpl_
+               4.birthqtr__#22.bpl_ 4.birthqtr__#23.bpl_
+               4.birthqtr__#24.bpl_ 4.birthqtr__#25.bpl_
+               4.birthqtr__#26.bpl_ 4.birthqtr__#27.bpl_
+               4.birthqtr__#28.bpl_ 4.birthqtr__#29.bpl_
+               4.birthqtr__#30.bpl_ 4.birthqtr__#31.bpl_
+               4.birthqtr__#32.bpl_ 4.birthqtr__#33.bpl_
+               4.birthqtr__#34.bpl_ 4.birthqtr__#35.bpl_
+               4.birthqtr__#36.bpl_ 4.birthqtr__#37.bpl_
+               4.birthqtr__#38.bpl_ 4.birthqtr__#39.bpl_
+               4.birthqtr__#40.bpl_ 4.birthqtr__#41.bpl_
+               4.birthqtr__#42.bpl_ 4.birthqtr__#43.bpl_
+               4.birthqtr__#44.bpl_ 4.birthqtr__#45.bpl_
+               4.birthqtr__#46.bpl_ 4.birthqtr__#47.bpl_
+               4.birthqtr__#48.bpl_ 4.birthqtr__#49.bpl_
+               4.birthqtr__#50.bpl_ 4.birthqtr__#51b.bpl_
+
+. quietly estat firststage
+
+. 
+. return list
+
+matrices:
+      r(singleresults) :  1 x 8
+
+. matrix D=r(singleresults)
+
+. matrix list D
+
+D[1,8]
+           c1         c2         c3         c4         c5         c6         c7         c8
+r1  .08118677    .080776  .00107435  3.1663298        153     496567  4.601e-36          .
+
+. scalar F4=D[1,4]
+
+. global F4=F4
+
+. outreg2 using mymodels, tex ctitle(TSLS) keep(edyrs SMSA married) ///
+> addstat(First-stage F-statistic, $F4) ///
+> addtext(Regional dummies, Included, Year dummies, Included, State of birth dummies, Included
+> , Instruments, Birth quarter * State of birth )
+mymodels.tex
+dir : seeout
+
+. 
+. /*point d-f*/
+. /*Please look at the attached pdf*/
+. 
+. capture log close

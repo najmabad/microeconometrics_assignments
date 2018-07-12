@@ -1,0 +1,1221 @@
+----------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assig
+> nment 3\Problem set 3 - Andreottola Bader Ciasullo Funck.log
+  log type:  text
+ opened on:  29 Apr 2017, 22:45:10
+
+. 
+. ***************************************************************************
+. ******************** Questions 1-3 ****************************************
+. ***************************************************************************
+. 
+. /*See the attached pdf file*/
+. 
+. ***************************************************************************
+. ******************** Questions 4 ******************************************
+. ***************************************************************************
+. use SIN19932001
+
+. 
+. collapse (mean) years_school=years_school ///
+> (semean) se=years_school, by (pop_census_bin100)
+
+. 
+. graph twoway scatter years_school pop_census_bin100, ///
+> ytitle(Average mayor's years of education) xtitle(Population size)
+
+. 
+. graph export figure1.png, replace
+(file figure1.png written in PNG format)
+
+. 
+. gen lower = years_school - se
+
+. gen upper = years_school + se
+
+. 
+. graph twoway scatter years_school pop_census_bin100, ///
+> ytitle(Average mayor's years of education) xtitle(Population size) ///
+>  || rcap lower upper pop_census_bin100
+
+. 
+. graph export figure1_bis.png, replace
+(file figure1_bis.png written in PNG format)
+
+. 
+. ***************************************************************************
+. ******************** Questions 5 ******************************************
+. ***************************************************************************
+. 
+. /*See the attached pdf file */
+. 
+. ***************************************************************************
+. ******************** Questions 6 ******************************************
+. ***************************************************************************
+. 
+. /*for the weighted regression */
+. graph twoway scatter years_school pop_census_bin100 || ///
+> lowess years_school pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthi
+> ck) ///
+> || lowess years_school pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(Average mayor's years of education) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. 
+. graph export figure2.png, replace
+(file figure2.png written in PNG format)
+
+. 
+. /*for the local linear regression */
+. preserve
+
+. drop if pop_census>=5000
+(18 observations deleted)
+
+. regress years_school pop_census
+
+      Source |       SS           df       MS      Number of obs   =        18
+-------------+----------------------------------   F(1, 16)        =      1.14
+       Model |   .11304076         1   .11304076   Prob > F        =    0.3006
+    Residual |  1.58017322        16  .098760826   R-squared       =    0.0668
+-------------+----------------------------------   Adj R-squared   =    0.0084
+       Total |  1.69321398        17  .099600822   Root MSE        =    .31426
+
+-----------------------------------------------------------------------------------
+     years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------+----------------------------------------------------------------
+pop_census_bin100 |  -.0001526   .0001427    -1.07   0.301    -.0004551    .0001498
+            _cons |    14.7977   .5896414    25.10   0.000     13.54771    16.04768
+-----------------------------------------------------------------------------------
+
+. predict yhat_small
+(option xb assumed; fitted values)
+
+. save reduced_, replace
+file reduced_.dta saved
+
+. restore
+
+. 
+. drop if pop_census<5000
+(18 observations deleted)
+
+. regress years_school pop_census
+
+      Source |       SS           df       MS      Number of obs   =        18
+-------------+----------------------------------   F(1, 16)        =      0.46
+       Model |  .160743177         1  .160743177   Prob > F        =    0.5054
+    Residual |  5.53897934        16  .346186209   R-squared       =    0.0282
+-------------+----------------------------------   Adj R-squared   =   -0.0325
+       Total |  5.69972252        17  .335277795   Root MSE        =    .58838
+
+-----------------------------------------------------------------------------------
+     years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------+----------------------------------------------------------------
+pop_census_bin100 |  -.0001838   .0002698    -0.68   0.505    -.0007558    .0003881
+            _cons |   15.59766   1.596639     9.77   0.000     12.21293    18.98238
+-----------------------------------------------------------------------------------
+
+. predict yhat_big
+(option xb assumed; fitted values)
+
+. append using reduced_
+
+. 
+. graph twoway scatter years_school pop_census_bin100 ///
+> || line yhat_small pop_census_bin100, lcolor(black) lwidth(medthick) || ///
+> line yhat_big pop_census_bin100, ytitle(Average mayor's years of education) xtitle(Populatio
+> n size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export figure3.png, replace
+(file figure3.png written in PNG format)
+
+. 
+. clear all
+
+. use SIN19932001
+
+. gen x_n = pop_census-5000 /*distance from the cutoff*/
+
+. 
+. drop if x_n>890 | x_n<-890
+(1,592 observations deleted)
+
+. count /*1573 units, approximately half of the sample*/
+  1,573
+
+. 
+. collapse (mean) years_school pop_census, by (pop_census_bin100)
+
+. 
+. regress years_school pop_census if pop_census<5000
+
+      Source |       SS           df       MS      Number of obs   =         9
+-------------+----------------------------------   F(1, 7)         =      8.76
+       Model |  .767054362         1  .767054362   Prob > F        =    0.0211
+    Residual |  .613211598         7  .087601657   R-squared       =    0.5557
+-------------+----------------------------------   Adj R-squared   =    0.4923
+       Total |  1.38026596         8  .172533245   Root MSE        =    .29598
+
+------------------------------------------------------------------------------
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+  pop_census |  -.0011171   .0003775    -2.96   0.021    -.0020099   -.0002244
+       _cons |   19.25922   1.721094    11.19   0.000     15.18948    23.32896
+------------------------------------------------------------------------------
+
+. predict yhat_small
+(option xb assumed; fitted values)
+
+. 
+. regress years_school pop_census if pop_census>=5000
+
+      Source |       SS           df       MS      Number of obs   =         9
+-------------+----------------------------------   F(1, 7)         =      0.31
+       Model |  .159733501         1  .159733501   Prob > F        =    0.5922
+    Residual |  3.55008159         7  .507154513   R-squared       =    0.0431
+-------------+----------------------------------   Adj R-squared   =   -0.0936
+       Total |  3.70981509         8  .463726886   Root MSE        =    .71215
+
+------------------------------------------------------------------------------
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+  pop_census |  -.0005166   .0009205    -0.56   0.592    -.0026931      .00166
+       _cons |   17.36175    5.02184     3.46   0.011     5.486988    29.23652
+------------------------------------------------------------------------------
+
+. predict yhat_big
+(option xb assumed; fitted values)
+
+. 
+. graph twoway scatter years_school pop_census ///
+> || line yhat_small pop_census if pop_census<5000, lcolor(black) lwidth(medthick) || ///
+> line yhat_big pop_census if pop_census>=5000, ytitle(Average mayor's years of education) xti
+> tle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export figure4.png, replace
+(file figure4.png written in PNG format)
+
+. 
+. clear all
+
+. use SIN19932001
+
+. gen x_n = pop_census-5000 /*distance from the cutoff*/
+
+. drop if x_n>450 | x_n<-450
+(2,378 observations deleted)
+
+. count /*787 units, approximately one quarter of the sample*/
+  787
+
+. 
+. collapse (mean) pop_census years_school, by (pop_census_bin100)
+
+. 
+. regress years_school pop_census if pop_census<5000
+
+      Source |       SS           df       MS      Number of obs   =         5
+-------------+----------------------------------   F(1, 3)         =      7.15
+       Model |  .426186893         1  .426186893   Prob > F        =    0.0754
+    Residual |  .178814969         3   .05960499   R-squared       =    0.7044
+-------------+----------------------------------   Adj R-squared   =    0.6059
+       Total |  .605001862         4  .151250466   Root MSE        =    .24414
+
+------------------------------------------------------------------------------
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+  pop_census |  -.0021469   .0008029    -2.67   0.075     -.004702    .0004082
+       _cons |    24.2942   3.822897     6.35   0.008     12.12803    36.46036
+------------------------------------------------------------------------------
+
+. predict yhat_small_
+(option xb assumed; fitted values)
+
+. 
+. regress years_school pop_census if pop_census>=5000
+
+      Source |       SS           df       MS      Number of obs   =         5
+-------------+----------------------------------   F(1, 3)         =      2.93
+       Model |  .378671283         1  .378671283   Prob > F        =    0.1853
+    Residual |  .387318934         3  .129106311   R-squared       =    0.4944
+-------------+----------------------------------   Adj R-squared   =    0.3258
+       Total |  .765990217         4  .191497554   Root MSE        =    .35931
+
+------------------------------------------------------------------------------
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+  pop_census |  -.0020407   .0011916    -1.71   0.185    -.0058328    .0017514
+       _cons |   25.19309   6.251067     4.03   0.027     5.299399    45.08677
+------------------------------------------------------------------------------
+
+. predict yhat_big_
+(option xb assumed; fitted values)
+
+. 
+. graph twoway scatter years_school pop_census ///
+> || line yhat_small_ pop_census if pop_census<5000, lcolor(black) lwidth(medthick) || ///
+> line yhat_big_ pop_census if pop_census>=5000, ytitle(Average mayor's years of education) xt
+> itle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export figure5.png, replace
+(file figure5.png written in PNG format)
+
+. 
+. 
+. ***************************************************************************
+. ******************** Questions 7 ******************************************
+. ***************************************************************************
+. /*Test 1: no jump in density of population size at the threshold*/
+. clear all
+
+. use SIN19932001
+
+. histogram pop_census, bin(36) frequency kdensity color(blue) ///
+> fcolor(bluishgray) lwidth(medthick) xtitle(Population size)
+(bin=36, start=3251, width=97)
+
+. graph export test1.png, replace
+(file test1.png written in PNG format)
+
+. 
+. /*Test 2: no discontinuity in the covariates at the threshold*/
+. clear all
+
+. use SIN19932001
+
+. collapse (mean) gender age, by (pop_census_bin100)
+
+. 
+. graph twoway scatter gender pop_census_bin100 || ///
+> lowess gender pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) //
+> /
+> || lowess gender pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(Probability that mayor is woman) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. 
+. graph export test2a.png, replace
+(file test2a.png written in PNG format)
+
+. 
+. graph twoway scatter age pop_census_bin100 || ///
+> lowess age pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+> || lowess age pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(Mayor's age) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export test2b.png, replace
+(file test2b.png written in PNG format)
+
+. 
+. clear all
+
+. use SIN19932001
+
+. sort id_city
+
+. quietly by id_city:  gen dup = cond(_N==1,0,_n)
+
+. tab dup
+
+        dup |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         68        2.15        2.15
+          1 |      1,420       44.87       47.01
+          2 |      1,420       44.87       91.88
+          3 |        257        8.12      100.00
+------------+-----------------------------------
+      Total |      3,165      100.00
+
+. drop if dup>1 /*so that we have only one observation per city*/
+(1,677 observations deleted)
+
+. 
+. collapse (mean) extension alt_center NORTH, by (pop_census_bin100)
+
+. 
+. graph twoway scatter extension pop_census_bin100 || ///
+> lowess extension pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick)
+>  ///
+> || lowess extension pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(City's area) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export test2c.png, replace
+(file test2c.png written in PNG format)
+
+. 
+. graph twoway scatter alt_center pop_census_bin100 || ///
+> lowess alt_center pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick
+> ) ///
+> || lowess alt_center pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(City's altitude) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export test2d.png, replace
+(file test2d.png written in PNG format)
+
+. 
+. graph twoway scatter NORTH pop_census_bin100 || ///
+> lowess NORTH pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+> || lowess NORTH pop_census_bin100 if pop_census_bin100>=5000, ///
+> ytitle(Probability that city is North) xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export test2e.png, replace /*here I see a jump, try also with LLR */
+(file test2e.png written in PNG format)
+
+. 
+. 
+. regress NORTH pop_census if pop_census<5000
+
+      Source |       SS           df       MS      Number of obs   =        18
+-------------+----------------------------------   F(1, 16)        =      1.44
+       Model |  .008462792         1  .008462792   Prob > F        =    0.2481
+    Residual |  .094215498        16  .005888469   R-squared       =    0.0824
+-------------+----------------------------------   Adj R-squared   =    0.0251
+       Total |  .102678291        17  .006039899   Root MSE        =    .07674
+
+-----------------------------------------------------------------------------------
+            NORTH |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------+----------------------------------------------------------------
+pop_census_bin100 |   .0000418   .0000348     1.20   0.248    -.0000321    .0001156
+            _cons |   .3609892   .1439782     2.51   0.023      .055769    .6662093
+-----------------------------------------------------------------------------------
+
+. predict yhat_small
+(option xb assumed; fitted values)
+
+. 
+. regress NORTH pop_census if pop_census>=5000
+
+      Source |       SS           df       MS      Number of obs   =        18
+-------------+----------------------------------   F(1, 16)        =      2.15
+       Model |  .022458804         1  .022458804   Prob > F        =    0.1620
+    Residual |  .167157313        16  .010447332   R-squared       =    0.1184
+-------------+----------------------------------   Adj R-squared   =    0.0633
+       Total |  .189616117        17  .011153889   Root MSE        =    .10221
+
+-----------------------------------------------------------------------------------
+            NORTH |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+------------------+----------------------------------------------------------------
+pop_census_bin100 |   .0000687   .0000469     1.47   0.162    -.0000306    .0001681
+            _cons |    .114069   .2773668     0.41   0.686    -.4739224    .7020604
+-----------------------------------------------------------------------------------
+
+. predict yhat_big
+(option xb assumed; fitted values)
+
+. 
+. graph twoway scatter NORTH pop_census_bin100 ///
+> || line yhat_small pop_census_bin100 if pop_census<5000, lcolor(black) lwidth(medthick) || /
+> //
+> line yhat_big pop_census_bin100 if pop_census>=5000, ytitle(Probability that city is North) 
+> xtitle(Population size) ///
+> lcolor(black) lwidth(medthick) legend(off)
+
+. graph export test2e_.png, replace /*still the jump, check the distribution*/
+(file test2e_.png written in PNG format)
+
+. 
+. tab NORTH if pop_census<5000
+
+     (mean) |
+      NORTH |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   .3833333 |          1        5.56        5.56
+   .4583333 |          1        5.56       11.11
+   .4594595 |          1        5.56       16.67
+   .4693878 |          1        5.56       22.22
+         .5 |          3       16.67       38.89
+    .509804 |          1        5.56       44.44
+   .5254237 |          1        5.56       50.00
+   .5285714 |          1        5.56       55.56
+   .5319149 |          1        5.56       61.11
+   .5492958 |          1        5.56       66.67
+   .5510204 |          1        5.56       72.22
+   .5517241 |          1        5.56       77.78
+   .5737705 |          1        5.56       83.33
+   .5882353 |          1        5.56       88.89
+   .6976744 |          1        5.56       94.44
+   .7021276 |          1        5.56      100.00
+------------+-----------------------------------
+      Total |         18      100.00
+
+. tab NORTH if pop_census>=5000 /*approximately same probability*/
+
+     (mean) |
+      NORTH |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       .375 |          1        5.56        5.56
+   .3888889 |          1        5.56       11.11
+   .4074074 |          1        5.56       16.67
+   .4130435 |          1        5.56       22.22
+       .425 |          1        5.56       27.78
+        .45 |          1        5.56       33.33
+   .4615385 |          1        5.56       38.89
+   .4857143 |          1        5.56       44.44
+         .5 |          2       11.11       55.56
+   .5294118 |          1        5.56       61.11
+   .5416667 |          1        5.56       66.67
+   .5777778 |          1        5.56       72.22
+         .6 |          1        5.56       77.78
+       .625 |          1        5.56       83.33
+   .6666667 |          1        5.56       88.89
+   .6785714 |          1        5.56       94.44
+        .72 |          1        5.56      100.00
+------------+-----------------------------------
+      Total |         18      100.00
+
+. 
+. 
+. 
+. ***************************************************************************
+. ******************** Questions 8 ******************************************
+. ***************************************************************************
+.                         clear all
+
+. use SIN19932001, clear
+
+. 
+. * Set up the data
+. 
+. gen x_n = pop_census - 5000
+
+. gen d = (x_n >= 0) 
+
+. gen d_x_n = d*x_n 
+
+. local cov "extension alt_center NORTH"
+
+. 
+. label variable x_n "Population centered (pop_c)"
+
+. label variable d "Treatment dummy"
+
+. label variable d_x_n "Treat dummy*pop_c"
+
+. 
+. label variable extension "City extension"
+
+. label variable alt_center "City altitude"
+
+. label variable NORTH "North dummy"
+
+. 
+. 
+. * Compute the ROT bandwidht
+. 
+. capture gen pop_census_2 = pop_census^2
+
+. capture gen pop_census_3 = pop_census^3
+
+. capture gen pop_census_4 = pop_census^4
+
+. qui reg years_school pop_census pop_census_2 pop_census_3 pop_census_4
+
+. 
+. matrix b = e(b)
+
+. 
+. capture gen quartic_derivative = (2*b[1,2] + 6*b[1,3]*pop_census + 12*b[1,4]*pop_census_2)^2
+
+. qui sum quartic_derivative
+
+. local m = r(sum)
+
+. 
+. qui sum pop_census
+
+. local R = r(max) - r(min)
+
+. local h_rot = 2.702 * ((e(rmse)^2 * `R')/`m')^(1/5)
+
+. 
+. display `R'
+3492
+
+. display `h_rot'
+1053.4476
+
+. 
+. * LLR estimates with different bandwidth
+. 
+. * bandwidht = 1746 (full sample)
+. reg years_school x_n d d_x_n, robust
+
+Linear regression                               Number of obs     =      3,105
+                                                F(3, 3101)        =       3.23
+                                                Prob > F          =     0.0215
+                                                R-squared         =     0.0030
+                                                Root MSE          =     2.9937
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0000975   .0001424    -0.68   0.494    -.0003766    .0001817
+           d |   .5182881    .217052     2.39   0.017     .0927079    .9438682
+       d_x_n |  -.0000384    .000221    -0.17   0.862    -.0004717    .0003948
+       _cons |    14.0931   .1497937    94.08   0.000     13.79939     14.3868
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, replace tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 1746)
+mymodels.tex
+dir : seeout
+
+. 
+. reg years_school x_n d d_x_n `cov', robust
+
+Linear regression                               Number of obs     =      3,105
+                                                F(6, 3098)        =      11.94
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0218
+                                                Root MSE          =     2.9667
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0000412   .0001424    -0.29   0.772    -.0003205     .000238
+           d |   .4341324   .2164476     2.01   0.045     .0097372    .8585277
+       d_x_n |   -.000041   .0002181    -0.19   0.851    -.0004686    .0003865
+   extension |  -.0027912   .0015071    -1.85   0.064    -.0057463    .0001639
+  alt_center |   .0006231   .0002688     2.32   0.021      .000096    .0011502
+       NORTH |  -.7667249   .1136888    -6.74   0.000     -.989638   -.5438118
+       _cons |   14.47556    .190126    76.14   0.000     14.10277    14.84835
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 1746)
+mymodels.tex
+dir : seeout
+
+. 
+. * bandwidht = 890 (half sample)
+. 
+. reg years_school x_n d d_x_n if x_n > -890 &  x_n < 890, robust
+
+Linear regression                               Number of obs     =      1,541
+                                                F(3, 1537)        =       4.69
+                                                Prob > F          =     0.0029
+                                                R-squared         =     0.0088
+                                                Root MSE          =     2.9869
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0010788   .0004073    -2.65   0.008    -.0018778   -.0002798
+           d |   1.111492   .2982316     3.73   0.000     .5265086    1.696476
+       d_x_n |   .0003229   .0005866     0.55   0.582    -.0008277    .0014734
+       _cons |   13.69608   .2175702    62.95   0.000     13.26931    14.12284
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 890)
+mymodels.tex
+dir : seeout
+
+. 
+. reg years_school x_n d d_x_n `cov' if x_n > -890 &  x_n < 890, robust
+
+Linear regression                               Number of obs     =      1,541
+                                                F(6, 1534)        =       5.61
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0221
+                                                Root MSE          =     2.9698
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0011663   .0004029    -2.89   0.004    -.0019565    -.000376
+           d |   1.057285   .2958007     3.57   0.000     .4770686    1.637502
+       d_x_n |   .0005279   .0005759     0.92   0.359    -.0006018    .0016576
+   extension |   .0009514   .0020492     0.46   0.643    -.0030682     .004971
+  alt_center |  -2.68e-06   .0004195    -0.01   0.995    -.0008255    .0008201
+       NORTH |  -.6648101    .163874    -4.06   0.000     -.986251   -.3433693
+       _cons |   13.98088     .27447    50.94   0.000      13.4425    14.51926
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 890)
+mymodels.tex
+dir : seeout
+
+. 
+. * bandwidht = 526.723 (ROT bandwidth)
+. 
+. reg years_school x_n d d_x_n if x_n > -526.723 &  x_n < 526.723, robust
+
+Linear regression                               Number of obs     =        906
+                                                F(3, 902)         =       4.26
+                                                Prob > F          =     0.0053
+                                                R-squared         =     0.0130
+                                                Root MSE          =     2.9704
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0006185    .001039    -0.60   0.552    -.0026577    .0014208
+           d |   1.146944   .3973993     2.89   0.004     .3670091    1.926879
+       d_x_n |  -.0010179   .0013464    -0.76   0.450    -.0036603    .0016245
+       _cons |   13.80046   .3086534    44.71   0.000     13.19469    14.40622
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 527)
+mymodels.tex
+dir : seeout
+
+. 
+. reg years_school x_n d d_x_n `cov' if x_n > -526.723 &  x_n < 526.723, robust
+
+Linear regression                               Number of obs     =        906
+                                                F(6, 899)         =       4.24
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.0268
+                                                Root MSE          =     2.9544
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0009221   .0010392    -0.89   0.375    -.0029616    .0011174
+           d |   1.190738   .3921856     3.04   0.002     .4210319    1.960444
+       d_x_n |  -.0005742   .0013399    -0.43   0.668    -.0032039    .0020554
+   extension |   .0037126   .0023885     1.55   0.120    -.0009749    .0084002
+  alt_center |   .0005878   .0004552     1.29   0.197    -.0003056    .0014812
+       NORTH |  -.3648896   .2135328    -1.71   0.088    -.7839704    .0541912
+       _cons |   13.60341   .3644024    37.33   0.000     12.88823    14.31859
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 527)
+mymodels.tex
+dir : seeout
+
+. 
+. * bandwidht = 450 (one fourth of sample)
+. 
+. reg years_school x_n d d_x_n if x_n > -450 &  x_n < 450, robust
+
+Linear regression                               Number of obs     =        774
+                                                F(3, 770)         =       4.83
+                                                Prob > F          =     0.0025
+                                                R-squared         =     0.0172
+                                                Root MSE          =     2.9453
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0017769   .0012832    -1.38   0.167    -.0042959    .0007421
+           d |   1.514359   .4328649     3.50   0.000     .6646241    2.364095
+       d_x_n |   -.000994   .0017183    -0.58   0.563    -.0043672    .0023792
+       _cons |   13.60572   .3375077    40.31   0.000     12.94317    14.26826
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 450)
+mymodels.tex
+dir : seeout
+
+. 
+. reg years_school x_n d d_x_n `cov' if x_n > -450 &  x_n < 450, robust
+
+Linear regression                               Number of obs     =        774
+                                                F(6, 767)         =       4.28
+                                                Prob > F          =     0.0003
+                                                R-squared         =     0.0309
+                                                Root MSE          =     2.9304
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0019278   .0012765    -1.51   0.131    -.0044336     .000578
+           d |   1.518862   .4255053     3.57   0.000     .6835689    2.354155
+       d_x_n |  -.0005746   .0017169    -0.33   0.738    -.0039449    .0027957
+   extension |   .0041048   .0024475     1.68   0.094    -.0006998    .0089094
+  alt_center |   .0005922   .0004809     1.23   0.219    -.0003518    .0015363
+       NORTH |  -.2951654   .2297658    -1.28   0.199    -.7462098     .155879
+       _cons |   13.38192   .3894604    34.36   0.000     12.61739    14.14645
+------------------------------------------------------------------------------
+
+. outreg2 using mymodels, tex label ///
+> title("Table 1 - Local Regression Estimates") ctitle(BW = 450)
+mymodels.tex
+dir : seeout
+
+. 
+. * Generate interactions, polynomials and regress 
+. global vars = "x_n d d_x_n"
+
+. reg years_school $vars, robust
+
+Linear regression                               Number of obs     =      3,105
+                                                F(3, 3101)        =       3.23
+                                                Prob > F          =     0.0215
+                                                R-squared         =     0.0030
+                                                Root MSE          =     2.9937
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0000975   .0001424    -0.68   0.494    -.0003766    .0001817
+           d |   .5182881    .217052     2.39   0.017     .0927079    .9438682
+       d_x_n |  -.0000384    .000221    -0.17   0.862    -.0004717    .0003948
+       _cons |    14.0931   .1497937    94.08   0.000     13.79939     14.3868
+------------------------------------------------------------------------------
+
+. outreg2 using polynomials, replace tex fmt(fc) label ///
+> title("Table 2 - Polynomial regression") ctitle(k = 1)
+polynomials.tex
+dir : seeout
+
+. reg years_school $vars `cov', robust
+
+Linear regression                               Number of obs     =      3,105
+                                                F(6, 3098)        =      11.94
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0218
+                                                Root MSE          =     2.9667
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0000412   .0001424    -0.29   0.772    -.0003205     .000238
+           d |   .4341324   .2164476     2.01   0.045     .0097372    .8585277
+       d_x_n |   -.000041   .0002181    -0.19   0.851    -.0004686    .0003865
+   extension |  -.0027912   .0015071    -1.85   0.064    -.0057463    .0001639
+  alt_center |   .0006231   .0002688     2.32   0.021      .000096    .0011502
+       NORTH |  -.7667249   .1136888    -6.74   0.000     -.989638   -.5438118
+       _cons |   14.47556    .190126    76.14   0.000     14.10277    14.84835
+------------------------------------------------------------------------------
+
+. outreg2 using polynomials, tex label fmt(fc) ///
+> title("Table 2 - Polynomial regression") ctitle(k = 1)
+polynomials.tex
+dir : seeout
+
+. local k = 4
+
+. local i = 2
+
+. while(`i' <= `k'){
+  2.         capture gen x_n_`i' = x_n^`i'
+  3.         label variable x_n_`i' "Pop_c`i'"
+  4.         capture gen d_x_n_`i' = d * x_n^`i'
+  5.         label variable d_x_n_`i' "Treat dummy*pop_c`i'"
+  6.         global vars = "$vars x_n_`i' d_x_n_`i'"
+  7.         reg years_school $vars, robust
+  8.         outreg2 using polynomials, tex label fmt(fc)  ///
+>         title("Table 2 - Polynomial regression") ctitle(k = `i' )
+  9.         reg years_school $vars `cov', robust
+ 10.         outreg2 using polynomials, tex label fmt(fc)  ///
+>         title("Table 2 - Polynomial regression") ctitle(k = `i' )
+ 11.         local i =`i' + 1 
+ 12. }
+
+Linear regression                               Number of obs     =      3,105
+                                                F(5, 3099)        =       2.55
+                                                Prob > F          =     0.0261
+                                                R-squared         =     0.0040
+                                                Root MSE          =     2.9931
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0010219   .0005802    -1.76   0.078    -.0021595    .0001158
+           d |   .9233179   .3219799     2.87   0.004     .2920023    1.554634
+       d_x_n |   .0004707   .0008793     0.54   0.593    -.0012534    .0021948
+       x_n_2 |  -5.08e-07   3.13e-07    -1.62   0.105    -1.12e-06    1.06e-07
+     d_x_n_2 |   7.56e-07   5.04e-07     1.50   0.133    -2.31e-07    1.74e-06
+       _cons |   13.79535   .2328264    59.25   0.000     13.33884    14.25185
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+Linear regression                               Number of obs     =      3,105
+                                                F(8, 3096)        =       9.22
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0231
+                                                Root MSE          =     2.9658
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |   -.001104   .0005746    -1.92   0.055    -.0022306    .0000226
+           d |   .8378613    .318578     2.63   0.009     .2132156    1.462507
+       d_x_n |   .0007781    .000866     0.90   0.369    -.0009199    .0024762
+       x_n_2 |  -5.84e-07   3.10e-07    -1.89   0.059    -1.19e-06    2.30e-08
+     d_x_n_2 |   7.30e-07   4.96e-07     1.47   0.141    -2.42e-07    1.70e-06
+   extension |  -.0028701   .0015126    -1.90   0.058    -.0058359    .0000957
+  alt_center |   .0006135   .0002697     2.27   0.023     .0000847    .0011423
+       NORTH |   -.775785   .1137805    -6.82   0.000    -.9988778   -.5526921
+       _cons |   14.14427   .2570736    55.02   0.000     13.64021    14.64832
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+Linear regression                               Number of obs     =      3,105
+                                                F(5, 3097)        =          .
+                                                Prob > F          =          .
+                                                R-squared         =     0.0063
+                                                Root MSE          =     2.9906
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0026284   .0015569    -1.69   0.091    -.0056811    .0004242
+           d |   1.649354   .4294189     3.84   0.000     .8073798    2.491329
+       d_x_n |  -.0014897   .0021817    -0.68   0.495    -.0057675    .0027881
+       x_n_2 |  -2.72e-06   1.99e-06    -1.37   0.172    -6.62e-06    1.19e-06
+     d_x_n_2 |   8.32e-06   2.97e-06     2.81   0.005     2.51e-06    .0000141
+       x_n_3 |  -8.24e-10   7.29e-10    -1.13   0.259    -2.25e-09    6.06e-10
+     d_x_n_3 |  -1.29e-09   1.14e-09    -1.13   0.260    -3.53e-09    9.52e-10
+       _cons |    13.5397   .3298276    41.05   0.000       12.893     14.1864
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+Linear regression                               Number of obs     =      3,105
+                                                F(8, 3094)        =          .
+                                                Prob > F          =          .
+                                                R-squared         =     0.0252
+                                                Root MSE          =     2.9635
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0028772   .0015387    -1.87   0.062    -.0058942    .0001397
+           d |   1.563851   .4225464     3.70   0.000     .7353512    2.392351
+       d_x_n |    -.00082   .0021468    -0.38   0.703    -.0050292    .0033892
+       x_n_2 |  -3.02e-06   1.97e-06    -1.54   0.125    -6.89e-06    8.39e-07
+     d_x_n_2 |   8.23e-06   2.93e-06     2.81   0.005     2.50e-06     .000014
+       x_n_3 |  -9.09e-10   7.21e-10    -1.26   0.208    -2.32e-09    5.05e-10
+     d_x_n_3 |  -1.09e-09   1.12e-09    -0.97   0.334    -3.29e-09    1.12e-09
+   extension |  -.0029863   .0015174    -1.97   0.049    -.0059615   -.0000112
+  alt_center |   .0006081   .0002691     2.26   0.024     .0000804    .0011359
+       NORTH |  -.7764334   .1137397    -6.83   0.000    -.9994464   -.5534205
+       _cons |   13.86882   .3430728    40.43   0.000     13.19615     14.5415
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+Linear regression                               Number of obs     =      3,105
+                                                F(6, 3095)        =          .
+                                                Prob > F          =          .
+                                                R-squared         =     0.0064
+                                                Root MSE          =     2.9915
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0018121    .003162    -0.57   0.567    -.0080119    .0043877
+           d |   1.637925   .5363843     3.05   0.002     .5862199     2.68963
+       d_x_n |   -.003129   .0042681    -0.73   0.464    -.0114977    .0052396
+       x_n_2 |  -7.00e-07   6.96e-06    -0.10   0.920    -.0000143    .0000129
+     d_x_n_2 |   8.53e-06   .0000101     0.85   0.398    -.0000113    .0000283
+       x_n_3 |   9.35e-10   5.79e-09     0.16   0.872    -1.04e-08    1.23e-08
+     d_x_n_3 |  -5.09e-09   8.85e-09    -0.58   0.565    -2.25e-08    1.23e-08
+       x_n_4 |   4.96e-13   1.61e-12     0.31   0.758    -2.66e-12    3.65e-12
+     d_x_n_4 |   1.04e-13   2.57e-12     0.04   0.968    -4.93e-12    5.14e-12
+       _cons |   13.61746   .4315321    31.56   0.000     12.77134    14.46358
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+Linear regression                               Number of obs     =      3,105
+                                                F(9, 3092)        =          .
+                                                Prob > F          =          .
+                                                R-squared         =     0.0255
+                                                Root MSE          =     2.9641
+
+------------------------------------------------------------------------------
+             |               Robust
+years_school |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         x_n |  -.0018111   .0031279    -0.58   0.563    -.0079441    .0043218
+           d |   1.627709   .5259368     3.09   0.002     .5964884     2.65893
+       d_x_n |  -.0039483   .0042117    -0.94   0.349    -.0122064    .0043098
+       x_n_2 |  -3.81e-07   6.90e-06    -0.06   0.956    -.0000139    .0000131
+     d_x_n_2 |   .0000112   9.99e-06     1.12   0.264    -8.42e-06    .0000308
+       x_n_3 |   1.39e-09   5.74e-09     0.24   0.808    -9.87e-09    1.27e-08
+     d_x_n_3 |  -8.52e-09   8.76e-09    -0.97   0.331    -2.57e-08    8.65e-09
+       x_n_4 |   6.50e-13   1.60e-12     0.41   0.684    -2.48e-12    3.78e-12
+     d_x_n_4 |   8.57e-13   2.55e-12     0.34   0.737    -4.14e-12    5.85e-12
+   extension |  -.0030101     .00152    -1.98   0.048    -.0059905   -.0000298
+  alt_center |   .0006018   .0002694     2.23   0.026     .0000736    .0011301
+       NORTH |  -.7841252   .1137768    -6.89   0.000    -1.007211   -.5610395
+       _cons |   13.97684   .4408471    31.70   0.000     13.11246    14.84122
+------------------------------------------------------------------------------
+polynomials.tex
+dir : seeout
+
+. 
+. 
+. 
+. 
+. 
+. 
+. * Computing AIC to better choose among different specifications
+. 
+. local k = 4
+
+. 
+. eststo clear
+
+. 
+. matrix output = J(4, 12 , 1)
+
+. 
+. local r = 1
+
+. foreach bandwidth in 1746 890 526.723 450 {
+  2.         local i = 1
+  3.         local c = 1
+  4.         global vars = "x_n d d_x_n"
+  5.         
+.         while(`i' <= `k'){
+  6.                 capture gen x_n_`i' = x_n^`i'
+  7.                 capture gen d_x_n_`i' = d * x_n^`i'
+  8.                 global vars = "$vars x_n_`i' d_x_n_`i'"
+  9.                 
+.                 qui reg years_school $vars if x_n > -`bandwidth' & x_n < `bandwidth'
+ 10.                 local bd = _b[d]
+ 11.                 local sed = _se[d]
+ 12.                 
+.                 local aic = e(N) * log(e(rmse)^2) + 2*(`i' + 1)
+ 13.                 
+.                 
+.                 matrix output[`r', `c'] = `aic'
+ 14.                 local c = `c' + 1
+ 15.                 matrix output[`r', `c'] = `bd'
+ 16.                 local c = `c' + 1
+ 17.                 matrix output[`r', `c'] = `sed'
+ 18.                 local c = `c' + 1
+ 19.                 
+.                 local i = `i' + 1
+ 20.         }
+ 21.         local r =  `r' + 1
+ 22. }
+
+. 
+. local h_rot_rounded = round(`h_rot'/2)
+
+. local r_bw =`R'/2
+
+. matrix rownames output = "bw=`r_bw'" "bw=890" "bw=`h_rot_rounded'" "bw=450" 
+
+. 
+. matrix output = output'
+
+. 
+. frmttable using AIC, statmat(output) title("Table 3") ///
+>         tex replace rtitles( ///
+>         "K=1", "AIC" \ "", "b" \ "", "se"\ ///
+>         "K=2", "AIC" \ "", "b" \ "", "se"\ ///
+>         "K=3", "AIC" \ "", "b" \ "", "se"\ ///
+>         "K=4", "AIC" \ "", "b" \ "", "se")
+
+                                           Table 3
+                     ----------------------------------------------------
+                                 bw=1746    bw=890    bw=527    bw=450  
+                     ----------------------------------------------------
+                      K=1  AIC   6,801.01  3,376.44  1,976.71  1,676.15 
+                           b       0.50      1.11      1.15      1.51   
+                           se      0.22      0.30      0.40      0.43   
+                      K=2  AIC   6,800.83  3,380.11  1,974.81  1,676.77 
+                           b       0.95      1.20      2.07      1.99   
+                           se      0.33      0.46      0.59      0.63   
+                      K=3  AIC   6,798.42  3,373.36  1,978.18  1,678.85 
+                           b       1.61      2.15      2.43      2.71   
+                           se      0.44      0.60      0.77      0.84   
+                      K=4  AIC   6,802.33  3,376.87  1,981.90  1,682.49 
+                           b       1.69      2.40      2.55      2.42   
+                           se      0.55      0.75      0.98      1.06   
+                     ----------------------------------------------------
+
+
+. 
+. ***************************************************************************
+. ******************** Questions 9 ******************************************
+. ***************************************************************************
+.  
+. clear all
+
+. set more off
+
+. use SIN19932001
+
+. 
+. 
+. * Using Fuji, Imbens and Kalyanaraman optimal bandwidth algorithm
+. 
+. rdob years_school pop_census, c(5000)
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+optimal bandwidth(h_opt) = 5.5558942
+RD point estimate = 3.6333333
+RD standard error = .54075566
+
+. sum pop_census if pop_census > 5000 - 5.55 & pop_census < 5000 + 5.55
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  pop_census |         11    4998.273    3.823373       4995       5005
+
+. 
+. * Using Nichols method 
+. rd years_school pop_census,gr z0(5000)
+Two variables specified; treatment is 
+assumed to jump from zero to one at Z=5000. 
+
+ Assignment variable Z is pop_census
+ Treatment variable X_T unspecified
+ Outcome variable y is years_school
+
+Command used for graph: lpoly; Kernel used: triangle (default)
+Bandwidth: 5.5956718; loc Wald Estimate: 3.6333333
+Bandwidth: 2.7978359; loc Wald Estimate: .
+Bandwidth: 11.191344; loc Wald Estimate: 1.5069236
+(60 missing values generated)
+(60 missing values generated)
+(60 missing values generated)
+Estimating for bandwidth 5.595671793500173
+Estimating for bandwidth 2.797835896750087
+Estimating for bandwidth 11.19134358700035
+------------------------------------------------------------------------------
+years_school |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       lwald |          0  (omitted)
+     lwald50 |          0  (omitted)
+    lwald200 |   1.506924     4.3953     0.34   0.732    -7.107706    10.12155
+------------------------------------------------------------------------------
+
+. 
+. 
+. * Using Cattaneo et al. method 
+. 
+. rdrobust years_school pop_census, c(5000)  all
+Preparing data.
+Computing bandwidth selectors.
+Computing variance-covariance matrix.
+Computing RD estimates.
+Estimation completed.
+
+Sharp RD estimates using local polynomial regression.
+
+      Cutoff c = 5000 | Left of c  Right of c               Number of obs =       3105
+----------------------+----------------------               NN matches    =          3
+        Number of obs |       511         464               BW type       =        CCT
+ Order loc. poly. (p) |         1           1               Kernel type   = Triangular
+       Order bias (q) |         2           2
+    BW loc. poly. (h) |   580.819     580.819
+          BW bias (b) |   967.561     967.561
+            rho (h/b) |     0.600       0.600
+
+Outcome: years_school. Running variable: pop_census.
+--------------------------------------------------------------------------------------
+               Method |    Coef.   Std. Err.     z      P>|z|     [95% Conf. Interval]
+----------------------+---------------------------------------------------------------
+         Conventional |   1.4355    .46399    3.0938    0.002       .526103    2.34489
+               Robust |      -         -      2.9159    0.004       .516859    2.63639
+--------------------------------------------------------------------------------------
+
+All estimates.
+--------------------------------------------------------------------------------------
+               Method |    Coef.   Std. Err.     z      P>|z|     [95% Conf. Interval]
+----------------------+---------------------------------------------------------------
+         Conventional |   1.4355    .46399    3.0938    0.002       .526103    2.34489
+       Bias-corrected |   1.5766    .46399    3.3980    0.001       .667231    2.48602
+               Robust |   1.5766    .54071    2.9159    0.004       .516859    2.63639
+--------------------------------------------------------------------------------------
+
+. rdbwselect years_school pop_census, c(5000) all
+Computing CCT bandwidth selector.
+Computing IK bandwidth selector.
+Computing CV bandwidth selector.
+
+Bandwidth estimators for RD local polynomial regression
+
+
+      Cutoff c = 5000 | Left of c  Right of c               Number of obs  =       3105
+----------------------+----------------------               NN matches     =          3
+        Number of obs |      1920        1185               Kernel type    = Triangular
+ Order loc. poly. (p) |         1           1               Min BW grid    =   13.00000
+       Order bias (q) |         2           2               Max BW grid    = 1738.00000
+  Range of pop_census |  1748.000    1738.000               Length BW grid =   86.25000
+
+----------------------------------------------
+   Method |      h           b          rho
+----------+-----------------------------------
+      CCT |  580.8188    967.5607     .6002918
+       IK |  670.2628    825.4524     .8119944
+       CV |   1306.75        NA          NA
+----------------------------------------------
+
+. 
+. * we present rdplot with confidence intervals
+. rdplot years_school pop_census, c(5000) binselect(es) ci(95) ///
+> graph_options(title("RD Plot:  Data on Italian Majors from 1993 to 2001") ///
+> ytitle(Elected Major's years of education) ///
+> xtitle(Inhabitans per municipality) ///
+> graphregion(color(white)))
+
+Number of bins for RD estimates.
+Method: IMSE-optimal evenly spaced method using spacings estimators.
+
+            Cutoff c = 5000 | Left of c     Right of c
+----------------------------+-------------------------
+     Number of observations |      1920           1185
+           Polynomial order |         4              4
+               Chosen scale |     1.000          1.000
+----------------------------+-------------------------
+              Selected bins |         4              6
+                 Bin length |   437.000        289.667
+----------------------------+-------------------------
+          IMSE-optimal bins |         4              6
+    Mimicking Variance bins |        45             46
+----------------------------+-------------------------
+Relative to IMSE-optimal:   | 
+              Implied scale |     1.000          1.000
+      WIMSE variance weight |     0.500          0.500
+          WIMSE bias weight |     0.500          0.500
+------------------------------------------------------
+
+
+.                                          
+. graph export "figure6.png", replace
+(file figure6.png written in PNG format)
+
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assig
+> nment 3\Problem set 3 - Andreottola Bader Ciasullo Funck.log
+  log type:  text
+ closed on:  29 Apr 2017, 22:45:39
+----------------------------------------------------------------------------------------------
